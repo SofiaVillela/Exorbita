@@ -1,0 +1,7 @@
+# pasta gerada pelo CMake (cada integrante gera a sua)
+build/
+# configuracoes pessoais do editor
+.vscode/
+*.exe
+# arquivos de salvamento da partida
+*.sav
