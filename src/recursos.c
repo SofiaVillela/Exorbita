@@ -1,7 +1,4 @@
 #include "recursos.h"  
-/* Variável que guarda a fonte carregada.
-   "static" = só este arquivo enxerga ela. Os outros arquivos pedem a
-   fonte chamando fontePadrao(), lá embaixo. */
 static Font fonte;
 
 /*  a fonte padrão da raylib não tem acentos (ç, ã, é...). Então usamos a PixelifySans */
@@ -35,7 +32,7 @@ void carregarRecursos(void)
          16          tamanho com que a fonte é "assada" em imagem
          codepoints  a lista de caracteres que montamos acima
          quantidade  quantos itens tem a lista  */
-    fonte = LoadFontEx("assets/fontes/PixelifySans.ttf", 16, codepoints, quantidade);
+    fonte = LoadFontEx("assets/fontes/PressStart2P-Regular.ttf", 8, codepoints, quantidade);
 
     /* Sem suavização: as letras ficam com pixels nítidos em vez de borradas. */
     SetTextureFilter(fonte.texture, TEXTURE_FILTER_POINT);
