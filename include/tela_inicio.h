@@ -1,0 +1,15 @@
+/* tela_inicio.h: o que o main.c pode chamar da tela de início. */
+
+#ifndef TELA_INICIO_H
+#define TELA_INICIO_H
+
+#include "telas.h"
+
+/* Lê o teclado e devolve para qual tela o jogo deve ir
+   (TELA_INICIO se nada mudou). */
+Tela atualizarTelaInicio(void);
+
+/* Desenha título, subtítulo e menu. Chamar dentro do BeginTextureMode. */
+void desenharTelaInicio(void);
+
+#endif

@@ -1,13 +1,8 @@
 #include "raylib.h"
 #include "constantes.h"
 #include "recursos.h"
-
-typedef enum {
-    TELA_INICIO,
-    TELA_NAVE,
-    TELA_REGRAS,
-    TELA_CREDITOS
-} Tela;
+#include "telas.h"
+#include "tela_inicio.h"
 
 int main(void)
 {
@@ -20,64 +15,29 @@ int main(void)
     RenderTexture2D telaJogo = LoadRenderTexture(LARGURA_VIRTUAL, ALTURA_VIRTUAL);
     SetTextureFilter(telaJogo.texture, TEXTURE_FILTER_POINT);
 
-    const char *opcoes[] = { "Jogar", "Regras", "Créditos", "Sair" };
-    int totalOpcoes = 4;
-    int selecionada = 0;   /* índice da opção em destaque */
     Tela tela = TELA_INICIO;
     bool rodando = true;
     while (rodando && !WindowShouldClose()) {
+        /* 1. Lógica: cada tela devolve para onde o jogo deve ir. */
         if (tela == TELA_INICIO) {
-            if (IsKeyPressed(KEY_DOWN)) {
-                selecionada++;
-                if (selecionada >= totalOpcoes) {
-                    selecionada = 0;              /* passou da última: volta para a primeira */
-                }
-            }
-            if (IsKeyPressed(KEY_UP)) {
-                selecionada--;
-                if (selecionada < 0) {
-                    selecionada = totalOpcoes - 1; /* antes da primeira: vai para a última */
-                }
-            }
-            if (IsKeyPressed(KEY_ENTER)) {
-                if (selecionada == 0) {
-                    tela = TELA_NAVE;
-                } else if (selecionada == 1) {
-                    tela = TELA_REGRAS;
-                } else if (selecionada == 2) {
-                    tela = TELA_CREDITOS;
-                } else if (selecionada == 3) {
-                    rodando = false;
-                }
-            }
+            tela = atualizarTelaInicio();
         } else {
             if (IsKeyPressed(KEY_ESCAPE)) {
                 tela = TELA_INICIO;
             }
         }
+        if (tela == TELA_SAIR) {
+            rodando = false;
+        }
+
+        /* 2. Desenho na tela pequena. */
         BeginTextureMode(telaJogo);
         ClearBackground(COR_FUNDO);
 
         Font fonte = fontePadrao();
 
         if (tela == TELA_INICIO) {
-            DrawTextEx(fonte, "Exórbita", (Vector2){ MARGEM_ESQUERDA, Y_TITULO },
-                       TAMANHO_TITULO, ESPACAMENTO_TITULO, COR_TITULO);
-            DrawTextEx(fonte, "Os Anos Perdidos", (Vector2){ MARGEM_ESQUERDA, Y_SUBTITULO },
-                       TAMANHO_SUBTITULO, ESPACAMENTO_SUBTITULO, COR_SUBTITULO);
-
-            for (int i = 0; i < totalOpcoes; i++) {
-                int y = Y_MENU + i * ESPACO_MENU;
-                Color cor = COR_MENU;
-
-                if (i == selecionada) {
-                    cor = COR_SELECIONADO;
-                    DrawRectangle(MARGEM_ESQUERDA, y + 2, TAMANHO_MARCADOR, TAMANHO_MARCADOR, COR_MARCADOR);
-                }
-
-                DrawTextEx(fonte, opcoes[i], (Vector2){ MARGEM_ESQUERDA + RECUO_MENU, y },
-                           TAMANHO_MENU, 0, cor);
-            }
+            desenharTelaInicio();
         } else if (tela == TELA_NAVE) {
             DrawTextEx(fonte, "Nave (em construção)", (Vector2){ MARGEM_ESQUERDA, 16 }, 8, 0, COR_TITULO);
         } else if (tela == TELA_REGRAS) {
