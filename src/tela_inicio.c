@@ -1,19 +1,35 @@
-/* tela_inicio.c: título, subtítulo e menu (Jogar, Regras, Créditos, Sair). */
+/* tela_inicio.c: fundo, planeta, título, subtítulo e menu (Jogar, Regras, Créditos, Sair). */
 
 #include "raylib.h"
 #include "constantes.h"
 #include "recursos.h"
 #include "tela_inicio.h"
-#include "estrelas.h"
+#include "fundo.h"
+#include "animacao.h"
 
 /* static: só este arquivo enxerga essas variáveis.
    Elas guardam o valor entre uma chamada e outra. */
 static const char *opcoes[] = { "Jogar", "Regras", "Créditos", "Sair" };
 static const int totalOpcoes = 4;
 static int selecionada = 0;   /* índice da opção em destaque */
+static Animacao planeta;      /* planeta do Ser girando à direita */
+
+void iniciarTelaInicio(void)
+{
+    carregarAnimacao(&planeta, "assets/imagens/planeta_ser.png",
+                     TAMANHO_PLANETA, TAMANHO_PLANETA, QUADROS_PLANETA);
+}
+
+void encerrarTelaInicio(void)
+{
+    descarregarAnimacao(&planeta);
+}
 
 Tela atualizarTelaInicio(void)
 {
+    atualizarFundo();
+    atualizarAnimacao(&planeta);
+
     if (IsKeyPressed(KEY_DOWN)) {
         selecionada++;
         if (selecionada >= totalOpcoes) {
@@ -42,7 +58,9 @@ Tela atualizarTelaInicio(void)
 
 void desenharTelaInicio(void)
 {
-    desenharEstrelas();
+    desenharFundo();
+    desenharAnimacao(&planeta, X_PLANETA_INICIO, Y_PLANETA_INICIO, ESCALA_PLANETA_INICIO);
+
     Font fonte = fontePadrao();
 
     DrawTextEx(fonte, "Exórbita", (Vector2){ MARGEM_ESQUERDA, Y_TITULO },

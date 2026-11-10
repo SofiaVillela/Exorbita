@@ -40,4 +40,16 @@
 #define COR_ESTRELA_MEDIA  GetColor(0x9C95ADFF)
 #define COR_ESTRELA_FORTE  GetColor(0xEDE6F2FF)
 
+/* Velocidade de cada camada do fundo, em pixels por segundo. */
+#define VELOCIDADE_NEBULOSA        1.0f
+#define VELOCIDADE_ESTRELAS_LONGE  3.0f
+#define VELOCIDADE_ESTRELAS_PERTO  7.0f
+
+#define TEMPO_QUADRO     0.12f   /* segundos por quadro das animações */
+#define TAMANHO_PLANETA  96      /* cada quadro do planeta tem 96x96 */
+#define QUADROS_PLANETA  96      /* quadros de uma volta completa */
+#define X_PLANETA_INICIO 176
+#define Y_PLANETA_INICIO 16
+#define ESCALA_PLANETA_INICIO 2
+
 #endif

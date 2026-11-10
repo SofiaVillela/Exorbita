@@ -9,7 +9,13 @@
    (TELA_INICIO se nada mudou). */
 Tela atualizarTelaInicio(void);
 
-/* Desenha título, subtítulo e menu. Chamar dentro do BeginTextureMode. */
+/* Desenha fundo, planeta, título, subtítulo e menu. Chamar dentro do BeginTextureMode. */
 void desenharTelaInicio(void);
+
+/* Carrega o GIF do planeta. Chamar uma vez, depois do InitWindow. */
+void iniciarTelaInicio(void);
+
+/* Libera o GIF do planeta. Chamar antes do CloseWindow. */
+void encerrarTelaInicio(void);
 
 #endif
