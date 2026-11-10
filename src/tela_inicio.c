@@ -4,6 +4,7 @@
 #include "constantes.h"
 #include "recursos.h"
 #include "tela_inicio.h"
+#include "estrelas.h"
 
 /* static: só este arquivo enxerga essas variáveis.
    Elas guardam o valor entre uma chamada e outra. */
@@ -41,6 +42,7 @@ Tela atualizarTelaInicio(void)
 
 void desenharTelaInicio(void)
 {
+    desenharEstrelas();
     Font fonte = fontePadrao();
 
     DrawTextEx(fonte, "Exórbita", (Vector2){ MARGEM_ESQUERDA, Y_TITULO },

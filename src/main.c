@@ -3,6 +3,7 @@
 #include "recursos.h"
 #include "telas.h"
 #include "tela_inicio.h"
+#include "estrelas.h"
 
 int main(void)
 {
@@ -11,6 +12,7 @@ int main(void)
     SetTargetFPS(FPS);
     SetExitKey(KEY_NULL);
     carregarRecursos();
+    iniciarEstrelas();
 
     RenderTexture2D telaJogo = LoadRenderTexture(LARGURA_VIRTUAL, ALTURA_VIRTUAL);
     SetTextureFilter(telaJogo.texture, TEXTURE_FILTER_POINT);

@@ -34,5 +34,10 @@
 #define COR_MENU          GetColor(0xB8B0C8FF)
 #define COR_SELECIONADO   GetColor(0xFFFFFFFF)
 #define COR_MARCADOR      GetColor(0xE8C86AFF)
+#define NUM_ESTRELAS  90
+
+#define COR_ESTRELA_FRACA  GetColor(0x5A5468FF)
+#define COR_ESTRELA_MEDIA  GetColor(0x9C95ADFF)
+#define COR_ESTRELA_FORTE  GetColor(0xEDE6F2FF)
 
 #endif
