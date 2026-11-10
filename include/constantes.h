@@ -25,4 +25,14 @@
 #define COR_TITULO     GetColor(0xEDE6F2FF)
 #define COR_SUBTITULO  GetColor(0x9B8CE0FF)
 
+#define Y_MENU           104
+#define ESPACO_MENU      16   /* distância entre uma opção e a próxima */
+#define RECUO_MENU       10   /* espaço entre o quadradinho e o texto */
+#define TAMANHO_MENU     8
+#define TAMANHO_MARCADOR 4
+
+#define COR_MENU          GetColor(0xB8B0C8FF)
+#define COR_SELECIONADO   GetColor(0xFFFFFFFF)
+#define COR_MARCADOR      GetColor(0xE8C86AFF)
+
 #endif
