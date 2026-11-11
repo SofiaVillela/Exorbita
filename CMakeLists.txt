@@ -57,9 +57,12 @@ target_link_libraries(exorbita PRIVATE raylib)
 # Regra do grupo: nenhum aviso no nosso código.
 target_compile_options(exorbita PRIVATE -Wall -Wextra)
 
-# Depois de cada compilação, copia a pasta assets/ para ao lado do .exe.
-# Necessário porque o jogo abre arquivos como "assets/fontes/...",
+# Copia a pasta assets/ para ao lado do .exe a cada "cmake --build".
+# Necessário porque o jogo abre arquivos como "assets/imagens/...",
 # e esse caminho é relativo a onde o .exe está.
-add_custom_command(TARGET exorbita POST_BUILD
+# É um alvo separado (add_custom_target sem saída) para rodar SEMPRE,
+# mesmo quando só uma imagem mudou e o código não precisou recompilar.
+add_custom_target(copiar_assets ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:exorbita>/assets)
+            ${CMAKE_SOURCE_DIR}/assets ${CMAKE_BINARY_DIR}/assets)
+add_dependencies(exorbita copiar_assets)
