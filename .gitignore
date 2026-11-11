@@ -5,3 +5,6 @@ build/
 *.exe
 # arquivos de salvamento da partida
 *.sav
+
+# previas geradas pelo Claude (nao vao para o repositorio)
+Claude outputs/

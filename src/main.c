@@ -3,6 +3,7 @@
 #include "recursos.h"
 #include "telas.h"
 #include "tela_inicio.h"
+#include "tela_nave.h"
 #include "fundo.h"
 
 int main(void)
@@ -14,6 +15,7 @@ int main(void)
     carregarRecursos();
     iniciarFundo();
     iniciarTelaInicio();
+    iniciarTelaNave();
 
     RenderTexture2D telaJogo = LoadRenderTexture(LARGURA_VIRTUAL, ALTURA_VIRTUAL);
     SetTextureFilter(telaJogo.texture, TEXTURE_FILTER_POINT);
@@ -24,6 +26,8 @@ int main(void)
         /* 1. Lógica: cada tela devolve para onde o jogo deve ir. */
         if (tela == TELA_INICIO) {
             tela = atualizarTelaInicio();
+        } else if (tela == TELA_NAVE) {
+            tela = atualizarTelaNave();
         } else {
             if (IsKeyPressed(KEY_ESCAPE)) {
                 tela = TELA_INICIO;
@@ -42,7 +46,7 @@ int main(void)
         if (tela == TELA_INICIO) {
             desenharTelaInicio();
         } else if (tela == TELA_NAVE) {
-            DrawTextEx(fonte, "Nave (em construção)", (Vector2){ MARGEM_ESQUERDA, 16 }, 8, 0, COR_TITULO);
+            desenharTelaNave();
         } else if (tela == TELA_REGRAS) {
             DrawTextEx(fonte, "Regras (em construção)", (Vector2){ MARGEM_ESQUERDA, 16 }, 8, 0, COR_TITULO);
         } else if (tela == TELA_CREDITOS) {
@@ -72,6 +76,7 @@ int main(void)
     }
     UnloadRenderTexture(telaJogo);
     encerrarTelaInicio();
+    encerrarTelaNave();
     encerrarFundo();
     descarregarRecursos();
     CloseWindow();
