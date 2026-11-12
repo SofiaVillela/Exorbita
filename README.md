@@ -2,26 +2,6 @@
 
 Jogo de exploração espacial em C e raylib. Esta versão inclui uma nave explorável e três destinos jogáveis: o planeta do robô, o planeta extraterrestre e o planeta do gigante.
 
-## Como jogar
-
-Use o executável compilado mais recente fora desta pasta:
-
-```sh
-sh /home/bdmf/Code/JogoEAD/gerados/Jogar-Exorbita.sh
-```
-
-O lançador abre `gerados/compilacao/exorbita/exorbita-planetas`. Para compilar a partir dos fontes com a raylib instalada:
-
-```sh
-cd /home/bdmf/Code/JogoEAD/Exorbita
-cc -std=c99 -Wall -Wextra -Wpedantic -Werror -Iinclude src/*.c \
-  -o /home/bdmf/Code/JogoEAD/gerados/compilacao/exorbita/exorbita-planetas \
-  $(pkg-config --cflags --libs raylib) -lm -Wl,-rpath,/usr/local/lib
-cmake -E copy_directory assets /home/bdmf/Code/JogoEAD/gerados/compilacao/exorbita/assets
-```
-
-O CMake do projeto está configurado para buscar raylib 5.5 pela rede. O comando acima usa a raylib já instalada no ambiente. Builds e arquivos de validação ficam em `gerados/`, ao lado desta pasta.
-
 ## Controles gerais
 
 | Teclas | Ação |
@@ -69,8 +49,3 @@ Na nave, aproxime-se do painel central para abrir o mapa estelar. Escolha Robô,
 - Após a captura, confirme para voltar à entrada. Áreas visitadas, conclusão, tradutor e vitórias nas cartas permanecem.
 - Visite as quatro áreas e use E no marco da câmara para concluir a exploração.
 
-## Progresso e estado do projeto
-
-O progresso entre planetas é mantido enquanto o jogo está aberto. Ainda não há salvamento em disco: fechar e iniciar o jogo cria uma nova partida. História completa, HUD compartilhado e destinos Ser e Sem Ar continuam pendentes.
-
-As cenas e regras são implementadas em C; os novos fundos ficam em `assets/imagens/planetas/`. Relatórios, prévias, capturas, executáveis e validações da implementação estão organizados fora deste repositório, em `../gerados/`.
