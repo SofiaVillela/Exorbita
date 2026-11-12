@@ -56,6 +56,9 @@
 #define LARGURA_PERSONAGEM 44   /* cada quadro da folha tem 44x58 */
 #define ALTURA_PERSONAGEM  58
 #define TOTAL_TRIPULANTES  6
+#define VELOCIDADE_JOGADOR 112.0f  /* pixels por segundo */
+#define VELOCIDADE_CORRIDA  176.0f
+#define TEMPO_PASSO_PERSONAGEM 0.10f
 
 /* Tradutor (tradutor.c): chance de a leitura de tom acertar.
    Vai de MIN (inteligência 0) a MAX (inteligência 100), em linha reta. */

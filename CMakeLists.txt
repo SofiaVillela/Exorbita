@@ -52,6 +52,9 @@ target_include_directories(exorbita PRIVATE include)
 
 # Liga o programa à raylib.
 target_link_libraries(exorbita PRIVATE raylib)
+if(UNIX)
+    target_link_libraries(exorbita PRIVATE m)
+endif()
 
 # Liga os avisos do compilador: -Wall e -Wextra mostram possíveis erros.
 # Regra do grupo: nenhum aviso no nosso código.
