@@ -5,6 +5,7 @@
 #include "tela_nave.h"
 #include "exploracao.h"
 #include "mapa_estelar.h"
+#include "partida.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -44,7 +45,7 @@ static const char *falas[TOTAL_TRIPULANTES][2] = {
     { "Você pode falar com todos a bordo.\nAproxime-se e pressione E.",
       "Enquanto conversamos, seus passos ficam em pausa.\nPressione E ou Enter para continuar." },
     { "O mapa estelar está no terminal central.\nEle reúne os cinco destinos conhecidos.",
-      "Use as setas para consultar cada planeta.\nO pouso ainda não está disponível." },
+      "Use as setas para escolher o destino.\nEnter pousa nos planetas disponíveis." },
     { "Há espaço para passar entre os tripulantes.\nCuidado com a cadeira diante do painel.",
       "Use WASD ou as setas para andar.\nSegure Shift se quiser correr." },
     { "O terminal da direita cuida das comunicações.\nPor enquanto, nenhum canal está conectado.",
@@ -215,7 +216,10 @@ Tela atualizarTelaNave(void)
     if (tempoMarcado > 0) tempoMarcado -= dt;
     if (tempoAviso > 0) tempoAviso -= dt;
     if (modo == MAPA) {
-        if (atualizarMapaEstelar()) modo = EXPLORANDO;
+        if (atualizarMapaEstelar()) {
+            modo = EXPLORANDO;
+            return destinoEscolhidoMapaEstelar();
+        }
         return TELA_NAVE;
     }
     if (modo == CONVERSANDO) {
@@ -378,7 +382,9 @@ static void desenharComunicacoes(void)
     texto("COMUNICAÇÕES", 80, 110, 16, COR_TITULO);
     DrawRectangle(80, 146, 6, 6, COR_MARCADOR);
     texto("CANAL EM ESPERA", 96, 146, 8, COR_MARCADOR);
-    texto("Nenhuma transmissão recebida.\n\nConsulte os destinos no mapa estelar.\nO contato com outros planetas ainda está indisponível.",
+    texto(progressoPartida()->temTradutor ?
+          "Tradutor recebido do robô cientista.\n\nEle será usado ao conversar com o visitante.\nA leitura do tom de voz pode falhar." :
+          "Nenhuma transmissão recebida.\n\nO cientista recebe visitantes em seu planeta.\nUse o mapa estelar para pousar e conhecê-lo.",
           80, 174, 8, COR_MENU);
     texto("E / ENTER / ESC  Voltar à nave", 80, 250, 8, COR_TITULO);
 }

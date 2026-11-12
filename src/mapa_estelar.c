@@ -3,6 +3,7 @@
 #include "raylib.h"
 #include "constantes.h"
 #include "recursos.h"
+#include "partida.h"
 
 enum { TOTAL_DESTINOS = 5, COLUNAS_FOLHA = 12, LINHAS_FOLHA = 8 };
 
@@ -17,11 +18,11 @@ static const DestinoEstelar destinos[TOTAL_DESTINOS] = {
     { "SER", "assets/imagens/planeta_ser.png",
       "Atmosfera violeta.\nRelevo acidentado.", { 82, 133 } },
     { "ROBÔ", "assets/imagens/planeta_robo.png",
-      "Superfície irregular.\nReflexos azulados.", { 207, 122 } },
+      "Robô cientista.\nDesafio de comandos.", { 207, 122 } },
     { "EXTRATERRESTRE", "assets/imagens/planeta_extraterrestre.png",
-      "Anéis luminosos.\nTons violetas e ciano.", { 320, 167 } },
+      "Cidade cyberpunk.\nEncontro e cartas.", { 320, 167 } },
     { "GIGANTE", "assets/imagens/planeta_gigante.png",
-      "Picos e crateras.\nGrandes formações.", { 264, 259 } },
+      "Quatro áreas vigiadas.\nOlhos e infrações.", { 264, 259 } },
     { "SEM AR", "assets/imagens/planeta_sem_ar.png",
       "Solo rochoso.\nCrateras visíveis.", { 108, 260 } }
 };
@@ -32,6 +33,17 @@ static bool aberto;
 static int selecionado;
 static int quadro;
 static float tempoQuadro;
+static Tela viagemSolicitada = TELA_NAVE;
+
+static Tela telaDestino(int indice)
+{
+    if (indice == 1) return TELA_ROBO;
+    if (indice == 2) return TELA_EXTRATERRESTRE;
+    if (indice == 3) return TELA_GIGANTE;
+    return TELA_NAVE;
+}
+
+Tela destinoEscolhidoMapaEstelar(void) { return viagemSolicitada; }
 
 static Color ciano(void)
 {
@@ -117,12 +129,18 @@ void abrirMapaEstelar(void)
 {
     aberto = true;
     tempoQuadro = 0;
+    viagemSolicitada = TELA_NAVE;
 }
 
 bool atualizarMapaEstelar(void)
 {
     if (!aberto) return false;
     if (IsKeyPressed(KEY_ESCAPE)) {
+        aberto = false;
+        return true;
+    }
+    if (IsKeyPressed(KEY_ENTER) && telaDestino(selecionado) != TELA_NAVE) {
+        viagemSolicitada = telaDestino(selecionado);
         aberto = false;
         return true;
     }
@@ -154,7 +172,8 @@ void desenharMapaEstelar(void)
     DrawRectangle(24, 18, 3, 16, COR_MARCADOR);
     texto("MAPA ESTELAR", 36, 18, 16, COR_TITULO);
     texto("CONSOLE DE NAVEGAÇÃO", 464, 22, 8, ciano());
-    texto("Selecione um destino para consultar.", 24, 45, 8, COR_MENU);
+    texto(progressoPartida()->temTradutor ? "Tradutor: recebido do cientista" :
+          "Tradutor: ainda não obtido", 24, 45, 8, COR_MENU);
 
     painel(24, 68, 360, 244);
     painel(400, 68, 216, 244);
@@ -189,9 +208,11 @@ void desenharMapaEstelar(void)
     DrawLine(416, 242, 600, 242, borda());
     texto(destinos[selecionado].descricao, 416, 252, 8, COR_MENU);
     DrawRectangle(416, 292, 4, 8, COR_MARCADOR);
-    texto("Pouso indisponível", 428, 292, 8, COR_MARCADOR);
+    texto(telaDestino(selecionado) != TELA_NAVE ? "ENTER  Pousar" : "Pouso indisponível",
+          428, 292, 8, COR_MARCADOR);
 
     texto("SETAS / WASD  Selecionar", 24, 332, 8, COR_MENU);
+    if (telaDestino(selecionado) != TELA_NAVE) texto("ENTER Pousar", 304, 332, 8, COR_MARCADOR);
     texto("ESC  Voltar à nave", 480, 332, 8, COR_TITULO);
 }
 

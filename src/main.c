@@ -5,12 +5,15 @@
 #include "tela_inicio.h"
 #include "tela_nave.h"
 #include "fundo.h"
+#include "tela_extraterrestre.h"
+#include "tela_gigante.h"
+#include "tela_robo.h"
 
 int main(void)
 {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(LARGURA_VIRTUAL * ESCALA_INICIAL, ALTURA_VIRTUAL * ESCALA_INICIAL,
-               "Exorbita: Os Anos Perdidos - Exploracao da nave");
+               "Exorbita: Os Anos Perdidos - Planetas jogaveis");
     if (!IsWindowReady()) return 1;
     /* Permite abrir pelo gerenciador de arquivos ou a partir de outra pasta. */
     ChangeDirectory(GetApplicationDirectory());
@@ -21,6 +24,9 @@ int main(void)
     iniciarFundo();
     iniciarTelaInicio();
     iniciarTelaNave();
+    iniciarTelaExtraterrestre();
+    iniciarTelaGigante();
+    iniciarTelaRobo();
 
     RenderTexture2D telaJogo = LoadRenderTexture(LARGURA_VIRTUAL, ALTURA_VIRTUAL);
     SetTextureFilter(telaJogo.texture, TEXTURE_FILTER_POINT);
@@ -28,11 +34,18 @@ int main(void)
     Tela tela = TELA_INICIO;
     bool rodando = true;
     while (rodando && !WindowShouldClose()) {
+        Tela anterior = tela;
         /* 1. Lógica: cada tela devolve para onde o jogo deve ir. */
         if (tela == TELA_INICIO) {
             tela = atualizarTelaInicio();
         } else if (tela == TELA_NAVE) {
             tela = atualizarTelaNave();
+        } else if (tela == TELA_EXTRATERRESTRE) {
+            tela = atualizarTelaExtraterrestre();
+        } else if (tela == TELA_GIGANTE) {
+            tela = atualizarTelaGigante();
+        } else if (tela == TELA_ROBO) {
+            tela = atualizarTelaRobo();
         } else {
             if (IsKeyPressed(KEY_ESCAPE)) {
                 tela = TELA_INICIO;
@@ -40,6 +53,11 @@ int main(void)
         }
         if (tela == TELA_SAIR) {
             rodando = false;
+        }
+        if (tela != anterior) {
+            if (tela == TELA_EXTRATERRESTRE) entrarTelaExtraterrestre();
+            if (tela == TELA_GIGANTE) entrarTelaGigante();
+            if (tela == TELA_ROBO) entrarTelaRobo();
         }
 
         /* 2. Desenho na tela pequena. */
@@ -52,6 +70,12 @@ int main(void)
             desenharTelaInicio();
         } else if (tela == TELA_NAVE) {
             desenharTelaNave();
+        } else if (tela == TELA_EXTRATERRESTRE) {
+            desenharTelaExtraterrestre();
+        } else if (tela == TELA_GIGANTE) {
+            desenharTelaGigante();
+        } else if (tela == TELA_ROBO) {
+            desenharTelaRobo();
         } else if (tela == TELA_REGRAS) {
             DrawTextEx(fonte, "Regras (em construção)", (Vector2){ MARGEM_ESQUERDA, 32 }, 16, 1, COR_TITULO);
         } else if (tela == TELA_CREDITOS) {
@@ -82,6 +106,9 @@ int main(void)
     UnloadRenderTexture(telaJogo);
     encerrarTelaInicio();
     encerrarTelaNave();
+    encerrarTelaExtraterrestre();
+    encerrarTelaGigante();
+    encerrarTelaRobo();
     encerrarFundo();
     descarregarRecursos();
     CloseWindow();

@@ -82,6 +82,6 @@ void desenharTelaInicio(void)
         DrawTextEx(fonte, opcoes[i], (Vector2){ MARGEM_ESQUERDA + RECUO_MENU, y },
                    TAMANHO_MENU, 0, cor);
     }
-    DrawTextEx(fonte, "EXPLORAÇÃO DA NAVE",
+    DrawTextEx(fonte, "PLANETAS JOGÁVEIS",
                (Vector2){ MARGEM_ESQUERDA, ALTURA_VIRTUAL - 24 }, 8, 0, COR_SUBTITULO);
 }
