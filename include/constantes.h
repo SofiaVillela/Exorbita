@@ -60,6 +60,29 @@
 #define VELOCIDADE_CORRIDA  176.0f
 #define TEMPO_PASSO_PERSONAGEM 0.10f
 
+/* ---------- Painel de planetas (mapa_estelar.c) ---------- */
+/* Combustível: toda viagem gasta o custo do planeta. A tripulação está
+   em outra galáxia, e voltar para casa é voltar à Via Láctea. Por isso,
+   depois de qualquer viagem, precisa sobrar o custo da Via Láctea.
+   Com estes valores, os 5 planetas (80) mais a Via Láctea (20) usam
+   exatamente o combustível inicial (100). */
+#define COMBUSTIVEL_INICIAL    100
+#define CUSTO_SER              10
+#define CUSTO_ROBO             15
+#define CUSTO_SEM_AR           15
+#define CUSTO_EXTRATERRESTRE   20
+#define CUSTO_GIGANTE          20
+#define CUSTO_VIA_LACTEA       20
+
+/* Desenho do painel. Planetas são folhas de 96x96 (TAMANHO_PLANETA). */
+#define ESCALA_PLANETA_PAINEL  2     /* selecionado: 96 x 2 = 192 px */
+#define X_CENTRO_PAINEL        320   /* centro do planeta selecionado */
+#define Y_CENTRO_PAINEL        160
+#define ESPACO_SETA_PAINEL     40    /* distância das setas < > até o planeta */
+#define TEMPO_AVISO_PAINEL     2.5f  /* segundos que um aviso fica na tela */
+#define MARGEM_PAINEL          24    /* distância do texto até a borda da tela */
+#define COR_ALERTA             GetColor(0xEE9A8AFF)  /* pêssego do guia */
+
 /* Tradutor (tradutor.c): chance de a leitura de tom acertar.
    Vai de MIN (inteligência 0) a MAX (inteligência 100), em linha reta. */
 #define TRADUTOR_PRECISAO_MIN  0.55f

@@ -13,6 +13,7 @@ typedef struct {
     unsigned int areasGiganteVisitadas;
     int capturasGigante;
     bool giganteConcluido;
+    int combustivel;   /* combustível atual da nave; o painel de planetas gasta */
 } ProgressoPartida;
 
 ProgressoPartida *progressoPartida(void);

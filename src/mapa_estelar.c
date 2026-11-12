@@ -1,164 +1,248 @@
-#include "mapa_estelar.h"
+/* mapa_estelar.c: painel de planetas, aberto pelo console central da nave.
 
+   Os planetas ficam numa lista circular duplamente encadeada
+   (lista_planetas.c). O painel mostra um planeta por vez, grande e no
+   centro. A seta da esquerda vai para o ant e a da direita para o prox;
+   como a lista é circular, do último se vai para o primeiro sem nenhum if.
+
+   Regras:
+   - toda viagem gasta o custo do planeta;
+   - a tripulação está em outra galáxia: voltar para casa é voltar à
+     Via Láctea. Depois de qualquer viagem, precisa sobrar o custo dela;
+   - a Via Láctea começa bloqueada e abre quando todos os outros
+     planetas forem visitados. */
+
+#include <string.h>
 #include "raylib.h"
 #include "constantes.h"
 #include "recursos.h"
+#include "fundo.h"
+#include "animacao.h"
 #include "partida.h"
+#include "lista_planetas.h"
+#include "mapa_estelar.h"
 
-enum { TOTAL_DESTINOS = 5, COLUNAS_FOLHA = 12, LINHAS_FOLHA = 8 };
+#define TOTAL_PLANETAS_PAINEL 6
+#define INDICE_VIA_LACTEA (TOTAL_PLANETAS_PAINEL - 1)   /* última de dados[] */
 
+/* Dados para montar a lista. A ordem aqui é a ordem no painel.
+   destino = TELA_NAVE quer dizer "ainda sem tela": o painel mostra o
+   planeta, mas não deixa pousar. arquivoBloqueado só existe na Via
+   Láctea: é a imagem desenhada enquanto ela está bloqueada. */
 typedef struct {
     const char *nome;
     const char *arquivo;
-    const char *descricao;
-    Vector2 centro;
-} DestinoEstelar;
+    const char *arquivoBloqueado;
+    int custo;
+    Tela destino;
+    bool bloqueado;
+} DadosPlaneta;
 
-static const DestinoEstelar destinos[TOTAL_DESTINOS] = {
-    { "SER", "assets/imagens/planeta_ser.png",
-      "Atmosfera violeta.\nRelevo acidentado.", { 82, 133 } },
-    { "ROBÔ", "assets/imagens/planeta_robo.png",
-      "Robô cientista.\nDesafio de comandos.", { 207, 122 } },
-    { "EXTRATERRESTRE", "assets/imagens/planeta_extraterrestre.png",
-      "Cidade cyberpunk.\nEncontro e cartas.", { 320, 167 } },
-    { "GIGANTE", "assets/imagens/planeta_gigante.png",
-      "Quatro áreas vigiadas.\nOlhos e infrações.", { 264, 259 } },
-    { "SEM AR", "assets/imagens/planeta_sem_ar.png",
-      "Solo rochoso.\nCrateras visíveis.", { 108, 260 } }
+static const DadosPlaneta dados[TOTAL_PLANETAS_PAINEL] = {
+    { "SER", "assets/imagens/planeta_ser.png", NULL,
+      CUSTO_SER, TELA_NAVE, false },
+    { "ROBÔ", "assets/imagens/planeta_robo.png", NULL,
+      CUSTO_ROBO, TELA_ROBO, false },
+    { "SEM AR", "assets/imagens/planeta_sem_ar.png", NULL,
+      CUSTO_SEM_AR, TELA_NAVE, false },
+    { "EXTRATERRESTRE", "assets/imagens/planeta_extraterrestre.png", NULL,
+      CUSTO_EXTRATERRESTRE, TELA_EXTRATERRESTRE, false },
+    { "GIGANTE", "assets/imagens/planeta_gigante.png", NULL,
+      CUSTO_GIGANTE, TELA_GIGANTE, false },
+    { "VIA LÁCTEA", "assets/imagens/via_lactea.png",
+      "assets/imagens/via_lactea_bloqueada.png",
+      CUSTO_VIA_LACTEA, TELA_NAVE, true }
 };
 
-static Texture2D planetas[TOTAL_DESTINOS];
-static bool iniciado;
-static bool aberto;
-static int selecionado;
-static int quadro;
-static float tempoQuadro;
+/* As imagens ficam fora da lista, porque a lista não usa raylib.
+   animacoes[i] e bloqueadas[i] correspondem a dados[i]. */
+static Animacao animacoes[TOTAL_PLANETAS_PAINEL];
+static Animacao bloqueadas[TOTAL_PLANETAS_PAINEL];
+
+static Planeta *lista = NULL;        /* início da lista circular */
+static Planeta *selecionado = NULL;  /* nó que está no centro do painel */
+
+static bool iniciado = false;
+static bool aberto = false;
 static Tela viagemSolicitada = TELA_NAVE;
 
-static Tela telaDestino(int indice)
+static const char *aviso = NULL;     /* mensagem de alerta, se houver */
+static float tempoAviso = 0;
+
+/* ---------- Funções de apoio ---------- */
+
+/* Acha a posição de um nó em dados[], comparando o caminho do arquivo.
+   strcmp compara o texto; == compararia só os endereços. */
+static int indiceDe(const Planeta *p)
 {
-    if (indice == 1) return TELA_ROBO;
-    if (indice == 2) return TELA_EXTRATERRESTRE;
-    if (indice == 3) return TELA_GIGANTE;
-    return TELA_NAVE;
+    for (int i = 0; i < TOTAL_PLANETAS_PAINEL; i++) {
+        if (strcmp(p->arquivo, dados[i].arquivo) == 0) {
+            return i;
+        }
+    }
+    return 0;
 }
 
-Tela destinoEscolhidoMapaEstelar(void) { return viagemSolicitada; }
-
-static Color ciano(void)
+/* Animação certa para o planeta: a bloqueada, se ele estiver bloqueado
+   e tiver essa imagem; senão, a normal. */
+static const Animacao *animacaoDe(const Planeta *p)
 {
-    return GetColor(0x68D8CDFF);
+    int i = indiceDe(p);
+    if (p->bloqueado && dados[i].arquivoBloqueado != NULL) {
+        return &bloqueadas[i];
+    }
+    return &animacoes[i];
 }
 
-static Color borda(void)
+/* Combustível que precisa sobrar depois de viajar para p: o custo da
+   Via Láctea, para a volta. Indo para a própria Via Láctea, nada. */
+static int reservaPara(const Planeta *p)
 {
-    return GetColor(0x665783FF);
+    if (indiceDe(p) == INDICE_VIA_LACTEA) {
+        return 0;
+    }
+    return CUSTO_VIA_LACTEA;
 }
 
-static void texto(const char *mensagem, float x, float y, int tamanho, Color cor)
+/* Desenha o quadro atual do planeta com o centro em (x, y), ampliado
+   pela escala. Igual ao desenharAnimacao, mas a partir do centro. */
+static void desenharPlaneta(const Planeta *p, int x, int y, int escala)
 {
-    DrawTextEx(fontePadrao(), mensagem, (Vector2){ x, y }, (float)tamanho, 0, cor);
+    const Animacao *a = animacaoDe(p);
+    if (a->folha.id == 0 || a->colunas == 0) {
+        return;   /* imagem não carregou: não desenha (e não divide por zero) */
+    }
+    int coluna = a->quadroAtual % a->colunas;
+    int linha = a->quadroAtual / a->colunas;
+    Rectangle origem = { coluna * a->larguraQuadro, linha * a->alturaQuadro,
+                         a->larguraQuadro, a->alturaQuadro };
+    int tamanho = a->larguraQuadro * escala;
+    Rectangle destino = { x - tamanho / 2, y - tamanho / 2, tamanho, tamanho };
+    DrawTexturePro(a->folha, origem, destino, (Vector2){ 0, 0 }, 0, WHITE);
 }
 
-static void painel(int x, int y, int largura, int altura)
+/* Escreve um texto com o centro em x. */
+static void textoCentralizado(const char *texto, int x, int y, int tamanho, Color cor)
 {
-    DrawRectangle(x, y, largura, altura, GetColor(0x1D192AFF));
-    DrawRectangleLines(x, y, largura, altura, borda());
-    DrawRectangle(x + 1, y + 1, largura - 2, 2, GetColor(0x342C48FF));
+    Vector2 medida = MeasureTextEx(fontePadrao(), texto, tamanho, 0);
+    DrawTextEx(fontePadrao(), texto, (Vector2){ x - (int)medida.x / 2, y },
+               tamanho, 0, cor);
 }
 
-static void desenharPlaneta(int indice, Vector2 centro, int tamanho)
+static void avisar(const char *mensagem)
 {
-    Texture2D folha = planetas[indice];
-    if (folha.id == 0) {
-        /* A consulta permanece utilizável mesmo se uma imagem estiver ausente. */
-        DrawCircle((int)centro.x, (int)centro.y, (float)tamanho / 3, borda());
-        DrawCircleLines((int)centro.x, (int)centro.y, (float)tamanho / 3, COR_SUBTITULO);
-        return;
+    aviso = mensagem;
+    tempoAviso = TEMPO_AVISO_PAINEL;
+}
+
+/* Tenta viajar para o planeta selecionado. Devolve true se a viagem
+   aconteceu. Cada regra que impede a viagem mostra um aviso. */
+static bool tentarViajar(void)
+{
+    ProgressoPartida *jogo = progressoPartida();
+
+    if (selecionado->bloqueado) {
+        avisar("Bloqueado: visite todos os outros planetas antes.");
+        return false;
+    }
+    if (selecionado->destino == TELA_NAVE) {
+        avisar("Pouso ainda indisponível neste planeta.");
+        return false;
+    }
+    if (jogo->combustivel - selecionado->custo < reservaPara(selecionado)) {
+        avisar("Combustível insuficiente: a reserva é para voltar à Via Láctea.");
+        return false;
     }
 
-    int atual = (quadro + indice * 11) % QUADROS_PLANETA;
-    Rectangle origem = {
-        (float)(atual % COLUNAS_FOLHA * TAMANHO_PLANETA),
-        (float)(atual / COLUNAS_FOLHA * TAMANHO_PLANETA),
-        TAMANHO_PLANETA, TAMANHO_PLANETA
-    };
-    Rectangle destino = {
-        centro.x - tamanho / 2, centro.y - tamanho / 2,
-        (float)tamanho, (float)tamanho
-    };
-    DrawTexturePro(folha, origem, destino, (Vector2){ 0, 0 }, 0, WHITE);
+    jogo->combustivel -= selecionado->custo;
+    selecionado->visitado = true;
+
+    /* Regra da Via Láctea: quando todos os livres foram visitados,
+       os bloqueados abrem. */
+    if (todosLivresVisitados(lista)) {
+        desbloquearPlanetas(lista);
+    }
+
+    viagemSolicitada = selecionado->destino;
+    return true;
 }
 
-static void desenharSelecao(Vector2 centro)
-{
-    int x = (int)centro.x - 31;
-    int y = (int)centro.y - 31;
-    Color cor = COR_MARCADOR;
-    for (int i = 0; i < 2; i++) {
-        int cx = x + i * 62;
-        DrawRectangle(cx - i * 8, y, 9, 2, cor);
-        DrawRectangle(cx, y, 2, 8, cor);
-        DrawRectangle(cx - i * 8, y + 62, 9, 2, cor);
-        DrawRectangle(cx, y + 56, 2, 8, cor);
-    }
-}
+/* ---------- Funções do mapa_estelar.h ---------- */
 
 void iniciarMapaEstelar(void)
 {
-    if (iniciado) return;
+    if (iniciado) {
+        return;
+    }
 
-    for (int i = 0; i < TOTAL_DESTINOS; i++) {
-        if (FileExists(destinos[i].arquivo)) {
-            planetas[i] = LoadTexture(destinos[i].arquivo);
-        }
-        if (planetas[i].id == 0 ||
-            planetas[i].width < COLUNAS_FOLHA * TAMANHO_PLANETA ||
-            planetas[i].height < LINHAS_FOLHA * TAMANHO_PLANETA) {
-            TraceLog(LOG_WARNING, "MAPA: imagem de planeta indisponivel: %s", destinos[i].arquivo);
-            if (planetas[i].id != 0) UnloadTexture(planetas[i]);
-            planetas[i] = (Texture2D){ 0 };
-        } else {
-            SetTextureFilter(planetas[i], TEXTURE_FILTER_POINT);
+    /* Monta a lista circular na ordem de dados[]. */
+    for (int i = 0; i < TOTAL_PLANETAS_PAINEL; i++) {
+        inserirPlaneta(&lista, dados[i].nome, dados[i].arquivo,
+                       dados[i].custo, dados[i].destino, dados[i].bloqueado);
+
+        carregarAnimacao(&animacoes[i], dados[i].arquivo,
+                         TAMANHO_PLANETA, TAMANHO_PLANETA, QUADROS_PLANETA);
+        if (dados[i].arquivoBloqueado != NULL) {
+            carregarAnimacao(&bloqueadas[i], dados[i].arquivoBloqueado,
+                             TAMANHO_PLANETA, TAMANHO_PLANETA, QUADROS_PLANETA);
         }
     }
+
+    selecionado = lista;   /* começa no primeiro planeta */
     iniciado = true;
 }
 
 void abrirMapaEstelar(void)
 {
     aberto = true;
-    tempoQuadro = 0;
     viagemSolicitada = TELA_NAVE;
+    aviso = NULL;
+    tempoAviso = 0;
+    /* selecionado não muda: o painel abre onde o jogador parou. */
+}
+
+Tela destinoEscolhidoMapaEstelar(void)
+{
+    return viagemSolicitada;
 }
 
 bool atualizarMapaEstelar(void)
 {
-    if (!aberto) return false;
+    if (!aberto || selecionado == NULL) {
+        return false;
+    }
+
+    for (int i = 0; i < TOTAL_PLANETAS_PAINEL; i++) {
+        atualizarAnimacao(&animacoes[i]);
+        if (dados[i].arquivoBloqueado != NULL) {
+            atualizarAnimacao(&bloqueadas[i]);
+        }
+    }
+
+    if (tempoAviso > 0) {
+        tempoAviso -= GetFrameTime();
+    }
+
+    /* Esc fecha sem viajar: a tela da nave continua. */
     if (IsKeyPressed(KEY_ESCAPE)) {
         aberto = false;
-        return true;
-    }
-    if (IsKeyPressed(KEY_ENTER) && telaDestino(selecionado) != TELA_NAVE) {
-        viagemSolicitada = telaDestino(selecionado);
-        aberto = false;
+        viagemSolicitada = TELA_NAVE;
         return true;
     }
 
-    bool anterior = IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_UP) ||
-                    IsKeyPressed(KEY_A) || IsKeyPressed(KEY_W);
-    bool proximo = IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_DOWN) ||
-                   IsKeyPressed(KEY_D) || IsKeyPressed(KEY_S);
-    if (anterior != proximo) {
-        selecionado = (selecionado + (proximo ? 1 : TOTAL_DESTINOS - 1)) % TOTAL_DESTINOS;
+    /* Setas andam pela lista: ant para a esquerda, prox para a direita. */
+    if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
+        selecionado = selecionado->ant;
+        aviso = NULL;
+    } else if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
+        selecionado = selecionado->prox;
+        aviso = NULL;
     }
 
-    float dt = GetFrameTime();
-    if (dt > 0 && dt < 1) {
-        tempoQuadro += dt;
-        while (tempoQuadro >= TEMPO_QUADRO) {
-            tempoQuadro -= TEMPO_QUADRO;
-            quadro = (quadro + 1) % QUADROS_PLANETA;
+    if (IsKeyPressed(KEY_ENTER)) {
+        if (tentarViajar()) {
+            aberto = false;
+            return true;
         }
     }
     return false;
@@ -166,62 +250,87 @@ bool atualizarMapaEstelar(void)
 
 void desenharMapaEstelar(void)
 {
-    if (!aberto) return;
+    if (!aberto || selecionado == NULL) {
+        return;
+    }
+    ProgressoPartida *jogo = progressoPartida();
 
-    DrawRectangle(0, 0, LARGURA_VIRTUAL, ALTURA_VIRTUAL, GetColor(0x13101DFF));
-    DrawRectangle(24, 18, 3, 16, COR_MARCADOR);
-    texto("MAPA ESTELAR", 36, 18, 16, COR_TITULO);
-    texto("CONSOLE DE NAVEGAÇÃO", 464, 22, 8, ciano());
-    texto(progressoPartida()->temTradutor ? "Tradutor: recebido do cientista" :
-          "Tradutor: ainda não obtido", 24, 45, 8, COR_MENU);
+    /* Guia de estilo: painéis usam o fundo de espaço com estrelas. */
+    desenharFundo();
 
-    painel(24, 68, 360, 244);
-    painel(400, 68, 216, 244);
+    /* Topo: título à esquerda, combustível à direita. */
+    DrawTextEx(fontePadrao(), "PAINEL DE PLANETAS", (Vector2){ MARGEM_PAINEL, MARGEM_PAINEL },
+               16, 0, COR_TITULO);
+    const char *textoCombustivel = TextFormat("COMBUSTÍVEL %d", jogo->combustivel);
+    int largura = (int)MeasureTextEx(fontePadrao(), textoCombustivel, 8, 0).x;
+    DrawTextEx(fontePadrao(), textoCombustivel,
+               (Vector2){ LARGURA_VIRTUAL - MARGEM_PAINEL - largura, MARGEM_PAINEL }, 8, 0, COR_TITULO);
+    const char *textoReserva = TextFormat("RESERVA PARA A VIA LÁCTEA %d", CUSTO_VIA_LACTEA);
+    largura = (int)MeasureTextEx(fontePadrao(), textoReserva, 8, 0).x;
+    DrawTextEx(fontePadrao(), textoReserva,
+               (Vector2){ LARGURA_VIRTUAL - MARGEM_PAINEL - largura, MARGEM_PAINEL + 16 }, 8, 0, COR_MENU);
 
-    /* Estrelas fixas: o mapa não troca de aparência ao abrir novamente. */
-    for (int i = 0; i < 54; i++) {
-        int x = 34 + (i * 73 + 19) % 340;
-        int y = 80 + (i * 47 + 11) % 220;
-        DrawPixel(x, y, i % 5 == 0 ? COR_MENU : GetColor(0x49405FFF));
+    /* Planeta selecionado, grande e no centro (pedido do playtest). */
+    int metade = TAMANHO_PLANETA * ESCALA_PLANETA_PAINEL / 2;
+    desenharPlaneta(selecionado, X_CENTRO_PAINEL, Y_CENTRO_PAINEL, ESCALA_PLANETA_PAINEL);
+
+    /* Setas dos lados, só se existir mais de um planeta. */
+    if (selecionado->ant != selecionado) {
+        textoCentralizado("<", X_CENTRO_PAINEL - metade - ESPACO_SETA_PAINEL,
+                          Y_CENTRO_PAINEL - 8, 16, COR_MARCADOR);
+        textoCentralizado(">", X_CENTRO_PAINEL + metade + ESPACO_SETA_PAINEL,
+                          Y_CENTRO_PAINEL - 8, 16, COR_MARCADOR);
     }
 
-    for (int i = 0; i < TOTAL_DESTINOS; i++) {
-        Vector2 a = destinos[i].centro;
-        Vector2 b = destinos[(i + 1) % TOTAL_DESTINOS].centro;
-        DrawLine((int)a.x, (int)a.y, (int)b.x, (int)b.y, GetColor(0x3C4258FF));
-    }
-    for (int i = 0; i < TOTAL_DESTINOS; i++) {
-        Vector2 centro = destinos[i].centro;
-        DrawCircleLines((int)centro.x, (int)centro.y, 29, GetColor(0x41374FFF));
-        desenharPlaneta(i, centro, 48);
-        float largura = MeasureTextEx(fontePadrao(), destinos[i].nome, 8, 0).x;
-        texto(destinos[i].nome, centro.x - largura / 2, centro.y + 36, 8,
-              i == selecionado ? COR_MARCADOR : COR_MENU);
-    }
-    desenharSelecao(destinos[selecionado].centro);
+    int y = Y_CENTRO_PAINEL + metade + 12;
+    textoCentralizado(selecionado->nome, X_CENTRO_PAINEL, y, 16, COR_TITULO);
 
-    texto(TextFormat("DESTINO %02d / %02d", selecionado + 1, TOTAL_DESTINOS), 416, 84, 8, ciano());
-    const char *nome = destinos[selecionado].nome;
-    int tamanhoNome = MeasureTextEx(fontePadrao(), nome, 16, 0).x <= 184 ? 16 : 8;
-    texto(nome, 416, 104, tamanhoNome, COR_TITULO);
-    desenharPlaneta(selecionado, (Vector2){ 508, 183 }, 96);
-    DrawLine(416, 242, 600, 242, borda());
-    texto(destinos[selecionado].descricao, 416, 252, 8, COR_MENU);
-    DrawRectangle(416, 292, 4, 8, COR_MARCADOR);
-    texto(telaDestino(selecionado) != TELA_NAVE ? "ENTER  Pousar" : "Pouso indisponível",
-          428, 292, 8, COR_MARCADOR);
+    /* Situação do planeta: bloqueado, visitado ou não visitado. */
+    const char *situacao;
+    Color corSituacao = COR_MENU;
+    if (selecionado->bloqueado) {
+        situacao = "BLOQUEADO";
+        corSituacao = COR_ALERTA;
+    } else if (selecionado->visitado) {
+        situacao = "VISITADO";
+    } else {
+        situacao = "NÃO VISITADO";
+        corSituacao = COR_MARCADOR;
+    }
+    textoCentralizado(TextFormat("CUSTO %d   %s", selecionado->custo, situacao),
+                      X_CENTRO_PAINEL, y + 24, 8, corSituacao);
 
-    texto("SETAS / WASD  Selecionar", 24, 332, 8, COR_MENU);
-    if (telaDestino(selecionado) != TELA_NAVE) texto("ENTER Pousar", 304, 332, 8, COR_MARCADOR);
-    texto("ESC  Voltar à nave", 480, 332, 8, COR_TITULO);
+    /* Quanto sobra depois da viagem. Em pêssego se ficar abaixo da reserva. */
+    int depois = jogo->combustivel - selecionado->custo;
+    Color corDepois = COR_MENU;
+    if (depois < reservaPara(selecionado)) {
+        corDepois = COR_ALERTA;
+    }
+    textoCentralizado(TextFormat("DEPOIS DA VIAGEM: %d", depois),
+                      X_CENTRO_PAINEL, y + 38, 8, corDepois);
+
+    if (aviso != NULL && tempoAviso > 0) {
+        textoCentralizado(aviso, X_CENTRO_PAINEL, y + 54, 8, COR_ALERTA);
+    }
+
+    /* Teclas, no rodapé. */
+    textoCentralizado("SETAS  Escolher     ENTER  Viajar     ESC  Voltar",
+                      X_CENTRO_PAINEL, ALTURA_VIRTUAL - 16, 8, COR_MENU);
 }
 
 void encerrarMapaEstelar(void)
 {
-    for (int i = 0; i < TOTAL_DESTINOS; i++) {
-        if (planetas[i].id != 0) UnloadTexture(planetas[i]);
-        planetas[i] = (Texture2D){ 0 };
+    if (!iniciado) {
+        return;
     }
+    for (int i = 0; i < TOTAL_PLANETAS_PAINEL; i++) {
+        descarregarAnimacao(&animacoes[i]);
+        if (dados[i].arquivoBloqueado != NULL) {
+            descarregarAnimacao(&bloqueadas[i]);
+        }
+    }
+    liberarPlanetas(&lista);
+    selecionado = NULL;
     iniciado = false;
     aberto = false;
 }
