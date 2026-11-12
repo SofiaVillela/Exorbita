@@ -52,4 +52,14 @@
 #define Y_PLANETA_INICIO 16
 #define ESCALA_PLANETA_INICIO 2
 
+/* Tradutor (tradutor.c): chance de a leitura de tom acertar.
+   Vai de MIN (inteligência 0) a MAX (inteligência 100), em linha reta. */
+#define TRADUTOR_PRECISAO_MIN  0.55f
+#define TRADUTOR_PRECISAO_MAX  0.90f
+
+/* Laboratório do robô (robo_logica.c). */
+#define ROBO_MAX_COMANDOS  16     /* quantos comandos cabem na fila */
+#define ROBO_TEMPO_PASSO   0.3f   /* segundos entre um comando e o próximo */
+#define ROBO_PASSOS_DICA   4      /* passos mostrados para tripulante inteligente */
+
 #endif
