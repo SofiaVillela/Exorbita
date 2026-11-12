@@ -33,8 +33,11 @@ void atualizarFundo(void)
 
     for (int i = 0; i < TOTAL_CAMADAS; i++) {
         deslocamento[i] += velocidade[i] * tempo;
-        if (deslocamento[i] >= LARGURA_VIRTUAL) {
-            deslocamento[i] -= LARGURA_VIRTUAL;   /* volta ao começo sem emenda */
+        /* Cada camada se repete a cada "largura da imagem" pixels.
+           As imagens podem ser mais largas que a tela (a nebulosa tem 768). */
+        int largura = camadas[i].width;
+        if (deslocamento[i] >= largura) {
+            deslocamento[i] -= largura;   /* volta ao começo sem emenda */
         }
     }
 }
@@ -47,7 +50,7 @@ void desenharFundo(void)
         /* Duas cópias lado a lado: quando a primeira sai pela esquerda,
            a segunda já está cobrindo a tela. */
         DrawTexture(camadas[i], -x, 0, WHITE);
-        DrawTexture(camadas[i], LARGURA_VIRTUAL - x, 0, WHITE);
+        DrawTexture(camadas[i], camadas[i].width - x, 0, WHITE);
     }
 }
 

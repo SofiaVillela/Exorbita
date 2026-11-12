@@ -74,7 +74,9 @@ void desenharTelaInicio(void)
 
         if (i == selecionada) {
             cor = COR_SELECIONADO;
-            DrawRectangle(MARGEM_ESQUERDA, y + 2, TAMANHO_MARCADOR, TAMANHO_MARCADOR, COR_MARCADOR);
+            /* Centraliza o quadradinho na altura da letra. */
+            int yMarcador = y + (TAMANHO_MENU - TAMANHO_MARCADOR) / 2;
+            DrawRectangle(MARGEM_ESQUERDA, yMarcador, TAMANHO_MARCADOR, TAMANHO_MARCADOR, COR_MARCADOR);
         }
 
         DrawTextEx(fonte, opcoes[i], (Vector2){ MARGEM_ESQUERDA + RECUO_MENU, y },

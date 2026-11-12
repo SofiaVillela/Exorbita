@@ -1,55 +1,60 @@
-/* constante.h: guarda as constantes do jogo (números que o grupo vai querer
+/* constantes.h: guarda as constantes do jogo (números que o grupo vai querer
    ajustar). Ficam todas aqui para não ficarem espalhadas pelo código. */
 
-#ifndef CONSTANTES_H    
+#ifndef CONSTANTES_H
 #define CONSTANTES_H
 
-/* Tamanho da janela, em pixels. Desenha nesse tamanho pequeno e
-   depois estica (ver main.c). */
-#define LARGURA_VIRTUAL 384
-#define ALTURA_VIRTUAL  224
-#define ESCALA_INICIAL  3
-#define FPS            60
+/* Tamanho interno do jogo, em pixels. Tudo é desenhado nesse tamanho
+   e depois ampliado para a janela com escala inteira (ver main.c).
+   640x360 em escala 2 = 1280x720; em escala 3 = 1920x1080. */
+#define LARGURA_VIRTUAL 640
+#define ALTURA_VIRTUAL  360
+#define ESCALA_INICIAL  2
+#define FPS             60
 
-#define MARGEM_ESQUERDA     16
+/* ---------- Tela de início ---------- */
+#define MARGEM_ESQUERDA     40
 
-#define TAMANHO_TITULO      16
-#define ESPACAMENTO_TITULO  1
-#define Y_TITULO            56
+/* A fonte (Press Start 2P) tem grade de 8 px: tamanhos múltiplos de 8. */
+#define TAMANHO_TITULO      32
+#define ESPACAMENTO_TITULO  2
+#define Y_TITULO            104
 
-#define TAMANHO_SUBTITULO      8
-#define ESPACAMENTO_SUBTITULO  0
-#define Y_SUBTITULO            (Y_TITULO + TAMANHO_TITULO + 8)
+#define TAMANHO_SUBTITULO      16
+#define ESPACAMENTO_SUBTITULO  1
+#define Y_SUBTITULO            (Y_TITULO + TAMANHO_TITULO + 12)
+
+#define Y_MENU           200
+#define ESPACO_MENU      28   /* distância entre uma opção e a próxima */
+#define RECUO_MENU       18   /* espaço entre o quadradinho e o texto */
+#define TAMANHO_MENU     16
+#define TAMANHO_MARCADOR 8
 
 #define COR_FUNDO      GetColor(0x25222BFF)
 #define COR_TITULO     GetColor(0xEDE6F2FF)
 #define COR_SUBTITULO  GetColor(0x9B8CE0FF)
 
-#define Y_MENU           104
-#define ESPACO_MENU      16   /* distância entre uma opção e a próxima */
-#define RECUO_MENU       10   /* espaço entre o quadradinho e o texto */
-#define TAMANHO_MENU     8
-#define TAMANHO_MARCADOR 4
-
 #define COR_MENU          GetColor(0xB8B0C8FF)
 #define COR_SELECIONADO   GetColor(0xFFFFFFFF)
 #define COR_MARCADOR      GetColor(0xE8C86AFF)
-#define NUM_ESTRELAS  90
 
-#define COR_ESTRELA_FRACA  GetColor(0x5A5468FF)
-#define COR_ESTRELA_MEDIA  GetColor(0x9C95ADFF)
-#define COR_ESTRELA_FORTE  GetColor(0xEDE6F2FF)
+/* ---------- Fundo do espaço ---------- */
+/* Velocidade de cada camada, em pixels por segundo. */
+#define VELOCIDADE_NEBULOSA        1.5f
+#define VELOCIDADE_ESTRELAS_LONGE  5.0f
+#define VELOCIDADE_ESTRELAS_PERTO  11.0f
 
-/* Velocidade de cada camada do fundo, em pixels por segundo. */
-#define VELOCIDADE_NEBULOSA        1.0f
-#define VELOCIDADE_ESTRELAS_LONGE  3.0f
-#define VELOCIDADE_ESTRELAS_PERTO  7.0f
-
+/* ---------- Animações e planetas ---------- */
 #define TEMPO_QUADRO     0.12f   /* segundos por quadro das animações */
 #define TAMANHO_PLANETA  96      /* cada quadro do planeta tem 96x96 */
 #define QUADROS_PLANETA  96      /* quadros de uma volta completa */
-#define X_PLANETA_INICIO 176
-#define Y_PLANETA_INICIO 16
-#define ESCALA_PLANETA_INICIO 2
+#define X_PLANETA_INICIO 328
+#define Y_PLANETA_INICIO 36
+#define ESCALA_PLANETA_INICIO 3  /* 96 x 3 = 288 px */
+
+/* ---------- Personagens (astronauta e tripulantes) ---------- */
+#define LARGURA_PERSONAGEM 44   /* cada quadro da folha tem 44x58 */
+#define ALTURA_PERSONAGEM  58
+#define TOTAL_TRIPULANTES  6
 
 #endif

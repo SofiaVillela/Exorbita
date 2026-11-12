@@ -48,9 +48,9 @@ int main(void)
         } else if (tela == TELA_NAVE) {
             desenharTelaNave();
         } else if (tela == TELA_REGRAS) {
-            DrawTextEx(fonte, "Regras (em construção)", (Vector2){ MARGEM_ESQUERDA, 16 }, 8, 0, COR_TITULO);
+            DrawTextEx(fonte, "Regras (em construção)", (Vector2){ MARGEM_ESQUERDA, 32 }, 16, 1, COR_TITULO);
         } else if (tela == TELA_CREDITOS) {
-            DrawTextEx(fonte, "Créditos (em construção)", (Vector2){ MARGEM_ESQUERDA, 16 }, 8, 0, COR_TITULO);
+            DrawTextEx(fonte, "Créditos (em construção)", (Vector2){ MARGEM_ESQUERDA, 32 }, 16, 1, COR_TITULO);
         }
         EndTextureMode();
 
