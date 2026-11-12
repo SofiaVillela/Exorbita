@@ -9,7 +9,12 @@
 int main(void)
 {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(LARGURA_VIRTUAL * ESCALA_INICIAL, ALTURA_VIRTUAL * ESCALA_INICIAL, "Exorbita: Os Anos Perdidos");
+    InitWindow(LARGURA_VIRTUAL * ESCALA_INICIAL, ALTURA_VIRTUAL * ESCALA_INICIAL,
+               "Exorbita: Os Anos Perdidos - Exploracao da nave");
+    if (!IsWindowReady()) return 1;
+    /* Permite abrir pelo gerenciador de arquivos ou a partir de outra pasta. */
+    ChangeDirectory(GetApplicationDirectory());
+    SetWindowMinSize(LARGURA_VIRTUAL, ALTURA_VIRTUAL);
     SetTargetFPS(FPS);
     SetExitKey(KEY_NULL);
     carregarRecursos();
