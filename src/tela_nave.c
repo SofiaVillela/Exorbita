@@ -14,7 +14,7 @@ typedef enum { EXPLORANDO, CONVERSANDO, TRIPULACAO, COMUNICACOES, MAPA } ModoNav
 enum { SEM_ALVO = -1, TERMINAL_EQUIPE = TOTAL_TRIPULANTES,
        TERMINAL_MAPA, TERMINAL_COMUNICACOES, TOTAL_TERMINAIS = 3 };
 
-static Texture2D sala, astronauta, tripulantes[TOTAL_TRIPULANTES];
+static Texture2D sala, tripulantes[TOTAL_TRIPULANTES];
 static PixelExploracao *pixelsPiso;
 static MapaExploracao piso;
 static ObstaculoExploracao obstaculos[TOTAL_TRIPULANTES];
@@ -34,7 +34,7 @@ static const char *arquivosTripulantes[TOTAL_TRIPULANTES] = {
     "assets/imagens/tripulante_loiro.png",
     "assets/imagens/tripulante_preto.png"
 };
-static const Vector2 pesTripulantes[TOTAL_TRIPULANTES] = {
+static Vector2 pesTripulantes[TOTAL_TRIPULANTES] = {
     { 120, 260 }, { 200, 300 }, { 270, 250 },
     { 380, 300 }, { 450, 255 }, { 540, 290 }
 };
@@ -131,10 +131,9 @@ static bool folhaValida(Texture2D folha)
 void iniciarTelaNave(void)
 {
     sala = LoadTexture("assets/imagens/sala_painel_fundo.png");
-    astronauta = LoadTexture("assets/imagens/astronauta.png");
     pronta = carregarPiso();
     pronta = pronta && sala.id != 0 && sala.width == LARGURA_VIRTUAL &&
-             sala.height == ALTURA_VIRTUAL && folhaValida(astronauta);
+             sala.height == ALTURA_VIRTUAL;
     for (int i = 0; i < TOTAL_TRIPULANTES; i++) {
         tripulantes[i] = LoadTexture(arquivosTripulantes[i]);
         pronta = folhaValida(tripulantes[i]) && pronta;
@@ -142,11 +141,12 @@ void iniciarTelaNave(void)
             pesTripulantes[i].x - 11, pesTripulantes[i].y - 8, 22, 8
         };
     }
-    jogador = (PontoExploracao){ 320, 330 };
+    int tripControlado = progressoPartida()->controlado;
+    jogador = (PontoExploracao){ pesTripulantes[tripControlado].x, pesTripulantes[tripControlado].y };
+    obstaculos[tripControlado].largura = 0;   /* não bate em si mesmo */
     pronta = pronta && posicaoLivreExploracao(&piso, jogador, obstaculos, TOTAL_TRIPULANTES);
     if (!pronta) TraceLog(LOG_ERROR, "NAVE: nao foi possivel preparar a exploracao");
     if (sala.id) SetTextureFilter(sala, TEXTURE_FILTER_POINT);
-    if (astronauta.id) SetTextureFilter(astronauta, TEXTURE_FILTER_POINT);
     for (int i = 0; i < TOTAL_TRIPULANTES; i++) {
         if (tripulantes[i].id) SetTextureFilter(tripulantes[i], TEXTURE_FILTER_POINT);
     }
@@ -157,9 +157,13 @@ void iniciarTelaNave(void)
 
 static int alvoProximo(void)
 {
+    int controlado = progressoPartida()->controlado;
     int proximo = SEM_ALVO;
     float menor = 46 * 46;
     for (int i = 0; i < TOTAL_TRIPULANTES; i++) {
+        if (i == controlado) {
+            continue;
+        }
         float dx = jogador.x - pesTripulantes[i].x;
         float dy = jogador.y - pesTripulantes[i].y;
         float distancia = dx * dx + dy * dy;
@@ -207,6 +211,38 @@ static void atualizarPassos(float dt)
     }
 }
 
+/* Tab: passa o controle para o próximo tripulante vivo.
+   Quem estava sendo controlado fica parado onde está. */
+static void trocarControlado(void)
+{
+    ProgressoPartida *jogo = progressoPartida();
+    int atual = jogo->controlado;
+
+    /* 1. quem sai fica onde está e volta a ser obstáculo */
+    pesTripulantes[atual] = (Vector2){ jogador.x, jogador.y };
+    obstaculos[atual] = (ObstaculoExploracao){ jogador.x - 11, jogador.y - 8, 22, 8 };
+
+    /* 2. procura o próximo vivo, dando a volta no vetor:
+          depois do último vem o primeiro */
+    int proximo = atual;
+    for (int passos = 0; passos < TOTAL_TRIPULANTES; passos++) {
+        proximo = proximo + 1;
+        if (proximo == TOTAL_TRIPULANTES) {
+            proximo = 0;
+        }
+        if (jogo->tripulacao[proximo].vivo) {
+            break;
+        }
+    }
+
+    /* 3. quem entra deixa de ser obstáculo, e o jogador vai para o lugar dele */
+    jogo->controlado = proximo;
+    obstaculos[proximo].largura = 0;
+    jogador = (PontoExploracao){ pesTripulantes[proximo].x, pesTripulantes[proximo].y };
+    quadro = 0;
+    direcao = 0;
+}
+
 Tela atualizarTelaNave(void)
 {
     atualizarFundo();
@@ -248,6 +284,9 @@ Tela atualizarTelaNave(void)
         return TELA_NAVE;
     }
     if (IsKeyPressed(KEY_ESCAPE)) return TELA_INICIO;
+    if (IsKeyPressed(KEY_TAB)) {
+        trocarControlado();
+    }
     atualizarPassos(dt);
     alvo = alvoProximo();
     if (IsKeyPressed(KEY_E)) {
@@ -283,6 +322,7 @@ static void seta(int x, int y, Color cor)
 
 static void desenharPessoas(void)
 {
+    int controlado = progressoPartida()->controlado;
     int ordem[TOTAL_TRIPULANTES + 1];
     float alturas[TOTAL_TRIPULANTES + 1];
     for (int i = 0; i <= TOTAL_TRIPULANTES; i++) {
@@ -293,14 +333,21 @@ static void desenharPessoas(void)
         }
     }
     for (int i = 0; i < TOTAL_TRIPULANTES; i++) {
+        if (i == controlado) {
+            continue;
+        }
         DrawEllipse((int)pesTripulantes[i].x, (int)pesTripulantes[i].y - 3, 13, 4, Fade(BLACK, 0.3f));
     }
     DrawEllipse((int)jogador.x, (int)jogador.y - 3, 13, 4, Fade(BLACK, 0.4f));
     for (int i = 0; i <= TOTAL_TRIPULANTES; i++) {
         int indice = ordem[i];
         if (indice == TOTAL_TRIPULANTES) {
-            personagem(astronauta, (Vector2){ jogador.x, jogador.y }, quadro, direcao);
-        } else personagem(tripulantes[indice], pesTripulantes[indice], 0, 0);
+            /* quem eu controlo: anda com a folha dele */
+            personagem(tripulantes[controlado], (Vector2){ jogador.x, jogador.y }, quadro, direcao);
+        }else if (indice != controlado) {
+            /* os outros, parados de frente */
+            personagem(tripulantes[indice], pesTripulantes[indice], 0, 0);
+        }
     }
     seta((int)jogador.x, (int)jogador.y - ALTURA_PERSONAGEM - 10, COR_MARCADOR);
     if (marcado >= 0 && tempoMarcado > 0) {
@@ -316,7 +363,7 @@ static void desenharIndicacoes(void)
     texto("Explore a nave", 26, 33, 8, COR_SUBTITULO);
     caixa(398, 12, 226, 46);
     texto("WASD / SETAS  Mover", 408, 20, 8, COR_MENU);
-    texto("SHIFT  Correr", 408, 33, 8, COR_MENU);
+    texto("SHIFT  Correr TAB Trocar", 408, 33, 8, COR_MENU);
     texto("E  Interagir   ESC  Menu", 408, 46, 8, COR_TITULO);
     if (alvo == SEM_ALVO) {
         if (tempoAviso > 0) {
@@ -409,7 +456,6 @@ void encerrarTelaNave(void)
 {
     encerrarMapaEstelar();
     if (sala.id) UnloadTexture(sala);
-    if (astronauta.id) UnloadTexture(astronauta);
     for (int i = 0; i < TOTAL_TRIPULANTES; i++) {
         if (tripulantes[i].id) UnloadTexture(tripulantes[i]);
     }
