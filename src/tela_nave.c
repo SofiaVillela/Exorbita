@@ -351,7 +351,7 @@ static void desenharConversa(void)
     caixa(16, 238, 608, 106);
     DrawRectangle(26, 253, 52, 74, GetColor(0x30283FFF));
     personagem(tripulantes[interlocutor], (Vector2){ 52, 318 }, 0, 0);
-    texto(TextFormat("TRIPULANTE %02d", interlocutor + 1), 92, 250, 8, COR_MARCADOR);
+    texto(progressoPartida()->tripulacao[interlocutor].nome, 92, 250, 8, COR_MARCADOR);
     texto(falas[interlocutor][pagina], 92, 271, 8, COR_TITULO);
     texto(TextFormat("%d/2", pagina + 1), 92, 326, 8, COR_SUBTITULO);
     texto(pagina == 0 ? "E / ENTER  Continuar" : "E / ENTER  Encerrar", 440, 326, 8, COR_MENU);
@@ -371,7 +371,7 @@ static void desenharTripulacao(void)
         texto(TextFormat("%02d", i + 1), (float)x + 27, 218, 8,
               i == inspecionado ? COR_MARCADOR : COR_MENU);
     }
-    texto(TextFormat("Tripulante %02d", inspecionado + 1), 52, 246, 8, COR_TITULO);
+    texto(progressoPartida()->tripulacao[inspecionado].nome, 52, 246, 8, COR_TITULO);
     texto("SETAS  Escolher   ENTER  Localizar   ESC  Voltar", 52, 278, 8, COR_MENU);
 }
 
