@@ -9,7 +9,6 @@
 typedef struct {
     bool temTradutor;
     bool roboConcluido;
-    int inteligencia;
     int vitoriasCartas;
     bool extraterrestreConcluido;
     unsigned int areasGiganteVisitadas;
@@ -22,5 +21,6 @@ typedef struct {
 
 ProgressoPartida *progressoPartida(void);
 void iniciarPartida(void);
+Tripulante *tripulanteControlado(void);
 
 #endif

@@ -43,7 +43,7 @@ static void traduzirFala(const char *mensagem, bool blefando)
     ProgressoPartida *progresso = progressoPartida();
     FalaAlien original = { mensagem, blefando };
     float sorteio = (float)GetRandomValue(0, 9999) / 10000;
-    traduzir(&original, progresso->temTradutor, progresso->inteligencia, sorteio, &fala);
+    traduzir(&original, progresso->temTradutor, tripulanteControlado()->tracos.inteligencia, sorteio, &fala);
 }
 
 static void anunciarCarta(void)
