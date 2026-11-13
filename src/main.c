@@ -8,6 +8,7 @@
 #include "tela_extraterrestre.h"
 #include "tela_gigante.h"
 #include "tela_robo.h"
+#include "partida.h"
 
 int main(void)
 {
@@ -27,6 +28,7 @@ int main(void)
     iniciarTelaExtraterrestre();
     iniciarTelaGigante();
     iniciarTelaRobo();
+    iniciarPartida();
 
     RenderTexture2D telaJogo = LoadRenderTexture(LARGURA_VIRTUAL, ALTURA_VIRTUAL);
     SetTextureFilter(telaJogo.texture, TEXTURE_FILTER_POINT);
