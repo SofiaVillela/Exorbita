@@ -1,6 +1,7 @@
 /* tela_intro.c: introdução da história.
 
-   Algumas páginas de texto sobre o fundo de estrelas. As letras
+   Texto sobre o fundo de estrelas (uma página; dá para dividir em mais
+   aumentando TOTAL_PAGINAS). As letras
    aparecem aos poucos (efeito máquina de escrever).
    Enter: se a página ainda está aparecendo, mostra tudo; se já está
    completa, vai para a próxima. Depois da última, a nave.
@@ -14,7 +15,7 @@
 #include "fundo.h"
 #include "tela_intro.h"
 
-#define TOTAL_PAGINAS     4
+#define TOTAL_PAGINAS     1
 #define LETRAS_POR_SEGUNDO 40.0f
 #define TAMANHO_TEXTO     8
 #define ALTURA_LINHA      16
@@ -23,16 +24,16 @@
 /* Texto da história: uma string por página, linhas separadas por \n. */
 static const char *paginas[TOTAL_PAGINAS] = {
     "Seis tripulantes partiram em uma missão de rotina.\n"
-    "No meio do salto, algo deu errado.",
-
+    "No meio do salto, algo deu errado.\n"
+    "\n"
     "Quando acordaram, as estrelas eram outras.\n"
     "A nave estava em uma galáxia distante,\n"
-    "longe da Via Láctea.",
-
+    "longe da Via Láctea.\n"
+    "\n"
     "O combustível é pouco.\n"
     "O caminho de volta é desconhecido.\n"
-    "Os planetas desta galáxia podem ter as respostas.",
-
+    "Os planetas desta galáxia podem ter as respostas.\n"
+    "\n"
     "Visitem todos os planetas.\n"
     "Só assim a rota para casa vai se abrir."
 };
@@ -159,9 +160,11 @@ void desenharTelaIntro(void)
 
     desenharPagina(paginas[pagina], letrasVisiveis());
 
-    /* Rodapé: página atual e teclas. */
-    DrawTextEx(fontePadrao(), TextFormat("%d/%d", pagina + 1, TOTAL_PAGINAS),
-               (Vector2){ MARGEM_ESQUERDA, ALTURA_VIRTUAL - 32 }, 8, 0, COR_SUBTITULO);
+    /* Rodapé: número da página (só se houver mais de uma) e teclas. */
+    if (TOTAL_PAGINAS > 1) {
+        DrawTextEx(fontePadrao(), TextFormat("%d/%d", pagina + 1, TOTAL_PAGINAS),
+                   (Vector2){ MARGEM_ESQUERDA, ALTURA_VIRTUAL - 32 }, 8, 0, COR_SUBTITULO);
+    }
     const char *dica = "ENTER  Continuar   ESC  Pular";
     int largura = (int)MeasureTextEx(fontePadrao(), dica, 8, 0).x;
     DrawTextEx(fontePadrao(), dica,
