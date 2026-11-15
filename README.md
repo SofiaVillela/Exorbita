@@ -1,6 +1,6 @@
 # Exórbita
 
-Jogo de exploração espacial em C e raylib. Esta versão inclui uma nave explorável e três destinos jogáveis: o planeta do robô, o planeta extraterrestre e o planeta do gigante.
+Jogo de exploração espacial em C e raylib. Esta versão inclui uma nave explorável e cinco destinos jogáveis: os planetas do Ser, do robô, sem ar, extraterrestre e do gigante.
 
 ## Controles gerais
 
@@ -12,7 +12,7 @@ Jogo de exploração espacial em C e raylib. Esta versão inclui uma nave explor
 | Enter | Confirmar, avançar diálogos ou pousar no destino selecionado |
 | Esc | Voltar/fechar a tela ou retornar à nave, conforme o contexto |
 
-Na nave, aproxime-se do painel central para abrir o mapa estelar. Escolha Robô, Extraterrestre ou Gigante e pressione Enter para pousar. Ser e Sem Ar aparecem no mapa, mas ainda não são destinos jogáveis.
+Na nave, aproxime-se do painel central para abrir o mapa estelar. Escolha um planeta e pressione Enter para pousar. A Via Láctea só abre depois que os outros forem visitados.
 
 ## O que já está implementado
 
@@ -21,7 +21,7 @@ Na nave, aproxime-se do painel central para abrir o mapa estelar. Escolha Robô,
 - Exploração em visão superior com movimento em oito direções, corrida e colisão com paredes e objetos.
 - Interação com tripulantes, painel de comunicações, terminal da equipe e mapa estelar.
 - Diálogos com avanço por tecla e pausa do movimento durante a conversa.
-- Cinco destinos exibidos no mapa; Robô, Extraterrestre e Gigante podem ser visitados nesta versão.
+- Cinco planetas no mapa, todos visitáveis, mais a Via Láctea.
 
 ### Planeta do robô e tradutor
 
@@ -41,11 +41,25 @@ Na nave, aproxime-se do painel central para abrir o mapa estelar. Escolha Robô,
 
 ### Planeta do gigante
 
-- Quatro áreas conectadas em sequência: entrada, passagens, pátio e câmara.
-- Olhos que abrem e fecham, varrem a área e detectam o jogador dentro do cone e da linha de visão.
-- Pilares servem de cobertura e bloqueiam a visão.
-- Correr observado, ficar exposto e entrar em zona restrita geram infrações e elevam o alerta.
-- O alerta sobe em perigo e diminui em segurança. Ao atingir o limite, ocorre captura.
-- Após a captura, confirme para voltar à entrada. Áreas visitadas, conclusão, tradutor e vitórias nas cartas permanecem.
-- Visite as quatro áreas e use E no marco da câmara para concluir a exploração.
+- Um planalto de pedra com o rosto do gigante ao fundo. Os olhos dele seguem, devagar, quem desceu.
+- Plantas brilhantes crescem pelo caminho e habitantes (bichinhos quadrados) andam aos pulos. Pisar numa planta vale 1 ponto de infração; esbarrar em um habitante vale 2.
+- Com 3 pontos o gigante reage: o chão treme, pedras caem e fica difícil andar por alguns segundos.
+- Sem novas infrações, ele se acalma e perdoa 1 ponto de tempos em tempos.
+- Com 5 pontos o gigante pega o tripulante, que escolhe uma resposta. Cada uma depende de um traço: carisma, inteligência ou egoísmo. Se convencer, volta para a nave; se não, o tripulante não volta.
+- Chegue ao posto do outro lado e use E para registrar o marco. E no círculo de pouso (ou Esc) volta à nave.
 
+### Planeta sem ar
+
+- Superfície de poeira rosa maior que a tela: a câmera acompanha o tripulante, e um marcador na borda mostra onde ficou o módulo de pouso.
+- Não há ar. O oxigênio do traje cai o tempo todo, mais depressa para quem corre (Shift). Cilindros espalhados recarregam; um deles só aparece para tripulantes curiosos.
+- Respiradouros no chão borbulham e depois soltam um jato de gás. Ficar no jato faz o traje vazar.
+- A mochila é uma pilha de 4 itens: tudo o que o tripulante encosta vai para o topo. E usa o item do topo e Q larga o item do topo. Sucata e rochas só ocupam espaço.
+- O portão da estação abre em duas etapas, cada uma com um item no topo da mochila: primeiro a célula de energia liga o terminal, depois a placa de acesso destrava. Os dois ficam em cantos opostos do mapa.
+- Dentro da estação está o pedaço do mapa. Leve-o ao módulo de pouso e use E para voltar à nave. Aqui Esc não volta para a nave: é preciso chegar ao módulo.
+- Se o oxigênio acabar, o tripulante cai, a tela se fecha em volta dele e aparece o memorial. A nave passa o controle para outro tripulante.
+- O portão continua como ficou entre uma visita e outra.
+
+## Testes e ferramentas
+
+- `tests/` tem um teste para cada conjunto de regras (lista de planetas, robô, tradutor, Ser, gigante, sem ar). O comando para compilar e rodar está no começo de cada arquivo.
+- `ferramentas/gerar_sem_ar.py` redesenha o cenário, a máscara e os itens do planeta sem ar (precisa de Python com numpy e Pillow). O jogo não precisa dele para rodar.

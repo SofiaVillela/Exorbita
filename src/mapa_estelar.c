@@ -47,6 +47,11 @@ static const DadosPlaneta dados[TOTAL_PLANETAS_PAINEL] = {
       CUSTO_SER, TELA_SER, false },
     { "ROBÔ", "assets/imagens/planeta_robo.png", NULL,
       CUSTO_ROBO, TELA_ROBO, false },
+<<<<<<< HEAD
+=======
+    { "SEM AR", "assets/imagens/planeta_sem_ar.png", NULL,
+      CUSTO_SEM_AR, TELA_SEM_AR, false },
+>>>>>>> 5793632 (feat: adiciona planeta sem ar e refaz o planeta do gigante)
     { "EXTRATERRESTRE", "assets/imagens/planeta_extraterrestre.png", NULL,
       CUSTO_EXTRATERRESTRE, TELA_EXTRATERRESTRE, false },
     { "VIA LÁCTEA", "assets/imagens/via_lactea.png",

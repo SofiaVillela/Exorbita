@@ -11,9 +11,10 @@ typedef struct {
     bool roboConcluido;
     int vitoriasCartas;
     bool extraterrestreConcluido;
-    unsigned int areasGiganteVisitadas;
-    int capturasGigante;
-    bool giganteConcluido;
+    int capturasGigante;       /* vezes em que o gigante pegou alguém */
+    bool giganteConcluido;     /* marco do posto registrado */
+    int etapaPortaoSemAr;      /* 0 sem energia, 1 pede a placa, 2 aberto (fica entre visitas) */
+    bool semArConcluido;       /* pedaço do mapa trazido para a nave */
     int combustivel;   /* combustível atual da nave; o painel de planetas gasta */
     int visitasSer;    /* pousos no planeta do Ser; decide a chance de ele aparecer */
     Tripulante tripulacao[TOTAL_TRIPULANTES];
