@@ -24,8 +24,8 @@
 #define ESPACAMENTO_SUBTITULO  1
 #define Y_SUBTITULO            (Y_TITULO + TAMANHO_TITULO + 12)
 
-#define Y_MENU           200
-#define ESPACO_MENU      28   /* distância entre uma opção e a próxima */
+#define Y_MENU           192
+#define ESPACO_MENU      26   /* distância entre uma opção e a próxima (cabem 5 opções) */
 #define RECUO_MENU       18   /* espaço entre o quadradinho e o texto */
 #define TAMANHO_MENU     16
 #define TAMANHO_MARCADOR 8

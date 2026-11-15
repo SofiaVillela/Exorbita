@@ -26,4 +26,10 @@ ProgressoPartida *progressoPartida(void);
 void iniciarPartida(void);
 Tripulante *tripulanteControlado(void);
 
+/* Existe uma partida que pode ser continuada pelo menu?
+   Vira true ao começar uma partida nova e false quando ela acaba
+   (chegada à Via Láctea ou ninguém vivo a bordo). */
+bool partidaEmAndamento(void);
+void marcarPartidaEmAndamento(bool emAndamento);
+
 #endif

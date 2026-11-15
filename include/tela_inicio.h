@@ -15,6 +15,9 @@ void desenharTelaInicio(void);
 /* Carrega o GIF do planeta. Chamar uma vez, depois do InitWindow. */
 void iniciarTelaInicio(void);
 
+/* Chamar ao voltar para o menu: refaz a lista (Continuar aparece ou some). */
+void entrarTelaInicio(void);
+
 /* Libera o GIF do planeta. Chamar antes do CloseWindow. */
 void encerrarTelaInicio(void);
 

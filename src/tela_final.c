@@ -12,6 +12,7 @@
 #include "fundo.h"
 #include "animacao.h"
 #include "tela_final.h"
+#include "partida.h"
 
 #define DURACAO_VIAGEM   7.0f    /* segundos da nave indo até a Via Láctea */
 #define DURACAO_FADE     1.5f    /* segundos escurecendo até o preto */
@@ -87,6 +88,7 @@ Tela atualizarTelaFinal(void)
         if (tempo < fimDaAnimacao) {
             tempo = fimDaAnimacao;       /* pula direto para o FIM */
         } else if (tempo >= fimDaAnimacao + ESPERA_TECLA) {
+            marcarPartidaEmAndamento(false);   /* a partida acabou: nada para continuar */
             return TELA_INICIO;
         }
     }

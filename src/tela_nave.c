@@ -326,6 +326,7 @@ Tela atualizarTelaNave(void)
     if (tempoAviso > 0) tempoAviso -= dt;
     if (modo == FIM) {
         if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER)) {
+            marcarPartidaEmAndamento(false);   /* ninguém vivo: nada para continuar */
             return TELA_INICIO;
         }
         return TELA_NAVE;

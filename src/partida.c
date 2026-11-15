@@ -1,6 +1,8 @@
 #include "partida.h"
 #include "constantes.h"
 
+static bool emAndamento = false;   /* fora da struct: não é zerado por iniciarPartida */
+
 static ProgressoPartida progresso = { 
      .combustivel = COMBUSTIVEL_INICIAL,
      .visitasSer = 0 };
@@ -25,4 +27,14 @@ void iniciarPartida(void)
 Tripulante *tripulanteControlado(void)
 {
     return &progresso.tripulacao[progresso.controlado];
+}
+
+bool partidaEmAndamento(void)
+{
+    return emAndamento;
+}
+
+void marcarPartidaEmAndamento(bool valor)
+{
+    emAndamento = valor;
 }

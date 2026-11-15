@@ -74,12 +74,14 @@ int main(void)
             if (tela == TELA_ROBO) entrarTelaRobo();
             if (tela == TELA_SER) entrarTelaSer();
             if (tela == TELA_FINAL) entrarTelaFinal();
+            if (tela == TELA_INICIO) entrarTelaInicio();
             if (tela == TELA_INTRO) {
                 /* Jogar no menu começa uma partida nova do zero. */
                 iniciarPartida();
                 reiniciarMapaEstelar();
                 reiniciarTelaNave();
                 reiniciarTelaRobo();
+                marcarPartidaEmAndamento(true);
                 entrarTelaIntro();
             }
             /* Voltou de um planeta para a nave (não do menu): confere

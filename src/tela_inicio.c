@@ -1,4 +1,7 @@
-/* tela_inicio.c: fundo, planeta, título, subtítulo e menu (Jogar, Regras, Créditos, Sair). */
+/* tela_inicio.c: fundo, planeta, título, subtítulo e menu.
+
+   Sem partida em andamento: Jogar, Regras, Créditos, Sair.
+   Com partida em andamento: Continuar, Nova partida, Regras, Créditos, Sair. */
 
 #include "raylib.h"
 #include "constantes.h"
@@ -6,18 +9,77 @@
 #include "tela_inicio.h"
 #include "fundo.h"
 #include "animacao.h"
+#include "partida.h"
 
 /* static: só este arquivo enxerga essas variáveis.
    Elas guardam o valor entre uma chamada e outra. */
-static const char *opcoes[] = { "Jogar", "Regras", "Créditos", "Sair" };
-static const int totalOpcoes = 4;
+typedef enum {
+    OPCAO_CONTINUAR,
+    OPCAO_NOVA,        /* "Jogar" ou "Nova partida" */
+    OPCAO_REGRAS,
+    OPCAO_CREDITOS,
+    OPCAO_SAIR,
+    TOTAL_OPCOES_MENU
+} OpcaoMenu;
+
+static OpcaoMenu opcoes[TOTAL_OPCOES_MENU];  /* opções visíveis agora, em ordem */
+static int totalOpcoes = 0;
 static int selecionada = 0;   /* índice da opção em destaque */
+
+/* Monta a lista do menu: "Continuar" só aparece com partida em andamento. */
+static void montarMenu(void)
+{
+    totalOpcoes = 0;
+    if (partidaEmAndamento()) {
+        opcoes[totalOpcoes] = OPCAO_CONTINUAR;
+        totalOpcoes++;
+    }
+    opcoes[totalOpcoes] = OPCAO_NOVA;
+    totalOpcoes++;
+    opcoes[totalOpcoes] = OPCAO_REGRAS;
+    totalOpcoes++;
+    opcoes[totalOpcoes] = OPCAO_CREDITOS;
+    totalOpcoes++;
+    opcoes[totalOpcoes] = OPCAO_SAIR;
+    totalOpcoes++;
+
+    if (selecionada >= totalOpcoes) {
+        selecionada = 0;
+    }
+}
+
+static const char *textoDaOpcao(OpcaoMenu opcao)
+{
+    if (opcao == OPCAO_CONTINUAR) {
+        return "Continuar";
+    }
+    if (opcao == OPCAO_NOVA) {
+        if (partidaEmAndamento()) {
+            return "Nova partida";
+        }
+        return "Jogar";
+    }
+    if (opcao == OPCAO_REGRAS) {
+        return "Regras";
+    }
+    if (opcao == OPCAO_CREDITOS) {
+        return "Créditos";
+    }
+    return "Sair";
+}
+
+void entrarTelaInicio(void)
+{
+    selecionada = 0;   /* volta destacando a primeira (Continuar, se houver) */
+    montarMenu();
+}
 static Animacao planeta;      /* planeta do Ser girando à direita */
 
 void iniciarTelaInicio(void)
 {
     carregarAnimacao(&planeta, "assets/imagens/planeta_ser.png",
                      TAMANHO_PLANETA, TAMANHO_PLANETA, QUADROS_PLANETA);
+    montarMenu();
 }
 
 void encerrarTelaInicio(void)
@@ -29,6 +91,7 @@ Tela atualizarTelaInicio(void)
 {
     atualizarFundo();
     atualizarAnimacao(&planeta);
+    montarMenu();
 
     if (IsKeyPressed(KEY_DOWN)) {
         selecionada++;
@@ -43,13 +106,16 @@ Tela atualizarTelaInicio(void)
         }
     }
     if (IsKeyPressed(KEY_ENTER)) {
-        if (selecionada == 0) {
-            return TELA_INTRO;     /* Jogar: primeiro a história, depois a nave */
-        } else if (selecionada == 1) {
+        OpcaoMenu opcao = opcoes[selecionada];
+        if (opcao == OPCAO_CONTINUAR) {
+            return TELA_NAVE;      /* volta para a nave como estava */
+        } else if (opcao == OPCAO_NOVA) {
+            return TELA_INTRO;     /* partida nova: primeiro a história, depois a nave */
+        } else if (opcao == OPCAO_REGRAS) {
             return TELA_REGRAS;
-        } else if (selecionada == 2) {
+        } else if (opcao == OPCAO_CREDITOS) {
             return TELA_CREDITOS;
-        } else if (selecionada == 3) {
+        } else if (opcao == OPCAO_SAIR) {
             return TELA_SAIR;
         }
     }
@@ -79,7 +145,7 @@ void desenharTelaInicio(void)
             DrawRectangle(MARGEM_ESQUERDA, yMarcador, TAMANHO_MARCADOR, TAMANHO_MARCADOR, COR_MARCADOR);
         }
 
-        DrawTextEx(fonte, opcoes[i], (Vector2){ MARGEM_ESQUERDA + RECUO_MENU, y },
+        DrawTextEx(fonte, textoDaOpcao(opcoes[i]), (Vector2){ MARGEM_ESQUERDA + RECUO_MENU, y },
                    TAMANHO_MENU, 0, cor);
     }
     DrawTextEx(fonte, "PLANETAS JOGÁVEIS",
