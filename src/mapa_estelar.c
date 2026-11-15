@@ -51,7 +51,7 @@ static const DadosPlaneta dados[TOTAL_PLANETAS_PAINEL] = {
       CUSTO_EXTRATERRESTRE, TELA_EXTRATERRESTRE, false },
     { "VIA LÁCTEA", "assets/imagens/via_lactea.png",
       "assets/imagens/via_lactea_bloqueada.png",
-      CUSTO_VIA_LACTEA, TELA_NAVE, true }
+      CUSTO_VIA_LACTEA, TELA_FINAL, true }
 };
 
 /* As imagens ficam fora da lista, porque a lista não usa raylib.

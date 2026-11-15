@@ -44,7 +44,7 @@ Tela atualizarTelaInicio(void)
     }
     if (IsKeyPressed(KEY_ENTER)) {
         if (selecionada == 0) {
-            return TELA_NAVE;
+            return TELA_INTRO;     /* Jogar: primeiro a história, depois a nave */
         } else if (selecionada == 1) {
             return TELA_REGRAS;
         } else if (selecionada == 2) {

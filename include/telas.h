@@ -6,11 +6,13 @@
 
 typedef enum {
     TELA_INICIO,
+    TELA_INTRO,
     TELA_NAVE,
     TELA_EXTRATERRESTRE,
     TELA_GIGANTE,
     TELA_ROBO,
     TELA_SER,
+    TELA_FINAL,
     TELA_REGRAS,
     TELA_CREDITOS,
     TELA_SAIR
