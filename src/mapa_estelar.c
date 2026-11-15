@@ -39,16 +39,16 @@ typedef struct {
 } DadosPlaneta;
 
 static const DadosPlaneta dados[TOTAL_PLANETAS_PAINEL] = {
+    { "SEM AR", "assets/imagens/planeta_sem_ar.png", NULL,
+      CUSTO_SEM_AR, TELA_NAVE, false },
+    { "GIGANTE", "assets/imagens/planeta_gigante.png", NULL,
+      CUSTO_GIGANTE, TELA_GIGANTE, false },
     { "SER", "assets/imagens/planeta_ser.png", NULL,
       CUSTO_SER, TELA_SER, false },
     { "ROBÔ", "assets/imagens/planeta_robo.png", NULL,
       CUSTO_ROBO, TELA_ROBO, false },
-    { "SEM AR", "assets/imagens/planeta_sem_ar.png", NULL,
-      CUSTO_SEM_AR, TELA_NAVE, false },
     { "EXTRATERRESTRE", "assets/imagens/planeta_extraterrestre.png", NULL,
       CUSTO_EXTRATERRESTRE, TELA_EXTRATERRESTRE, false },
-    { "GIGANTE", "assets/imagens/planeta_gigante.png", NULL,
-      CUSTO_GIGANTE, TELA_GIGANTE, false },
     { "VIA LÁCTEA", "assets/imagens/via_lactea.png",
       "assets/imagens/via_lactea_bloqueada.png",
       CUSTO_VIA_LACTEA, TELA_NAVE, true }
