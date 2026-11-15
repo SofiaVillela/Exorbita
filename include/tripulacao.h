@@ -16,7 +16,6 @@ typedef struct {
     const char *nome;
     const char *arquivo;
     int idade;
-    int mental;
     int oxigenio;
     bool vivo;
     Tracos tracos;

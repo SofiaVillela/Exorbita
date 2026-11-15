@@ -8,6 +8,7 @@
 #include "tela_extraterrestre.h"
 #include "tela_gigante.h"
 #include "tela_robo.h"
+#include "tela_ser.h"
 #include "partida.h"
 
 int main(void)
@@ -28,6 +29,7 @@ int main(void)
     iniciarTelaExtraterrestre();
     iniciarTelaGigante();
     iniciarTelaRobo();
+    iniciarTelaSer();
     iniciarPartida();
 
     RenderTexture2D telaJogo = LoadRenderTexture(LARGURA_VIRTUAL, ALTURA_VIRTUAL);
@@ -48,6 +50,8 @@ int main(void)
             tela = atualizarTelaGigante();
         } else if (tela == TELA_ROBO) {
             tela = atualizarTelaRobo();
+        } else if (tela == TELA_SER) {
+            tela = atualizarTelaSer();
         } else {
             if (IsKeyPressed(KEY_ESCAPE)) {
                 tela = TELA_INICIO;
@@ -60,6 +64,10 @@ int main(void)
             if (tela == TELA_EXTRATERRESTRE) entrarTelaExtraterrestre();
             if (tela == TELA_GIGANTE) entrarTelaGigante();
             if (tela == TELA_ROBO) entrarTelaRobo();
+            if (tela == TELA_SER) entrarTelaSer();
+            /* Voltou de um planeta para a nave (não do menu): confere
+               quem está vivo e quem passa a ser controlado. */
+            if (tela == TELA_NAVE && anterior != TELA_INICIO) entrarTelaNave();
         }
 
         /* 2. Desenho na tela pequena. */
@@ -78,6 +86,8 @@ int main(void)
             desenharTelaGigante();
         } else if (tela == TELA_ROBO) {
             desenharTelaRobo();
+        } else if (tela == TELA_SER) {
+            desenharTelaSer();
         } else if (tela == TELA_REGRAS) {
             DrawTextEx(fonte, "Regras (em construção)", (Vector2){ MARGEM_ESQUERDA, 32 }, 16, 1, COR_TITULO);
         } else if (tela == TELA_CREDITOS) {
@@ -111,6 +121,7 @@ int main(void)
     encerrarTelaExtraterrestre();
     encerrarTelaGigante();
     encerrarTelaRobo();
+    encerrarTelaSer();
     encerrarFundo();
     descarregarRecursos();
     CloseWindow();

@@ -66,8 +66,11 @@
    em outra galáxia, e voltar para casa é voltar à Via Láctea. Por isso,
    depois de qualquer viagem, precisa sobrar o custo da Via Láctea.
    Com estes valores, os 5 planetas (80) mais a Via Láctea (20) usam
-   exatamente o combustível inicial (100). */
+   exatamente 100. COMBUSTIVEL_MAXIMO é a capacidade do tanque (o desejo
+   "encher o tanque" do Ser leva até ele); com 100, um tanque cheio
+   sempre basta para terminar a rota. O inicial pode ser menor. */
 #define COMBUSTIVEL_INICIAL    100
+#define COMBUSTIVEL_MAXIMO     100
 #define CUSTO_SER              10
 #define CUSTO_ROBO             15
 #define CUSTO_SEM_AR           15
@@ -83,6 +86,27 @@
 #define TEMPO_AVISO_PAINEL     2.5f  /* segundos que um aviso fica na tela */
 #define MARGEM_PAINEL          24    /* distância do texto até a borda da tela */
 #define COR_ALERTA             GetColor(0xEE9A8AFF)  /* pêssego do guia */
+
+/* Planeta do Ser dos desejos (ser_logica.c).
+   Chance de o Ser aparecer, em %, conforme a visita: a 1ª é garantida;
+   da 2ª em diante soma (sorte - 50) / 2 de quem desceu, entre 0 e 100.
+   Da 5ª visita em diante vale a última chance. */
+#define CHANCE_SER_1    100
+#define CHANCE_SER_2    50
+#define CHANCE_SER_3    25
+#define CHANCE_SER_4    12
+#define MINIMO_CARISMA_REJUVENESCER  50
+#define MINIMO_SORTE_REVIVER         55
+#define MINIMO_EGOISMO_ARMADILHA     70   /* "Quero ir para a Terra agora" */
+#define MINIMO_IMPULSIVIDADE_TUDO    70   /* "Quero tudo" */
+#define MINIMO_CURIOSIDADE_CAMINHO   60   /* "Mostre o caminho" */
+#define MINIMO_INTELIGENCIA_VOZES    70   /* "Quero entender as outras vozes" */
+#define GANHO_INTELIGENCIA_SER       15
+#define GANHO_SORTE_SER              20
+#define ENVELHECER_TUDO              30   /* anos a mais para quem pediu tudo */
+#define TRACO_MAXIMO                 100
+#define IDADE_REJUVENESCIDA          18
+#define ESCALA_SER                   3   /* sprite de 64x100 desenhado 3x: 192x300 */
 
 /* Tradutor (tradutor.c): chance de a leitura de tom acertar.
    Vai de MIN (inteligência 0) a MAX (inteligência 100), em linha reta. */

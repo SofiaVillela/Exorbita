@@ -83,3 +83,21 @@ void desbloquearPlanetas(Planeta *inicio)
         atual = atual->prox;
     } while (atual != inicio);
 }
+
+Planeta *primeiroNaoVisitado(Planeta *inicio)
+{
+    if (inicio == NULL) {
+        return NULL;
+    }
+
+    /* Mesmo percurso do todosLivresVisitados: do-while até voltar ao início. */
+    Planeta *atual = inicio;
+    do {
+        if (!atual->bloqueado && !atual->visitado) {
+            return atual;
+        }
+        atual = atual->prox;
+    } while (atual != inicio);
+
+    return NULL;
+}

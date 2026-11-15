@@ -15,6 +15,7 @@ typedef struct {
     int capturasGigante;
     bool giganteConcluido;
     int combustivel;   /* combustível atual da nave; o painel de planetas gasta */
+    int visitasSer;    /* pousos no planeta do Ser; decide a chance de ele aparecer */
     Tripulante tripulacao[TOTAL_TRIPULANTES];
     int controlado;
 } ProgressoPartida;

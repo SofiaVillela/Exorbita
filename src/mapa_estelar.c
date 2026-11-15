@@ -40,7 +40,7 @@ typedef struct {
 
 static const DadosPlaneta dados[TOTAL_PLANETAS_PAINEL] = {
     { "SER", "assets/imagens/planeta_ser.png", NULL,
-      CUSTO_SER, TELA_NAVE, false },
+      CUSTO_SER, TELA_SER, false },
     { "ROBÔ", "assets/imagens/planeta_robo.png", NULL,
       CUSTO_ROBO, TELA_ROBO, false },
     { "SEM AR", "assets/imagens/planeta_sem_ar.png", NULL,
@@ -333,4 +333,9 @@ void encerrarMapaEstelar(void)
     selecionado = NULL;
     iniciado = false;
     aberto = false;
+}
+
+Planeta *listaPlanetasMapa(void)
+{
+    return lista;
 }

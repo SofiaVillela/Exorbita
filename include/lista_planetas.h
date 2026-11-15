@@ -36,4 +36,9 @@ bool todosLivresVisitados(const Planeta *inicio);
 /* Tira o bloqueio de todos os planetas da lista. */
 void desbloquearPlanetas(Planeta *inicio);
 
+/* Devolve o primeiro planeta livre (não bloqueado) que ainda não foi
+   visitado, andando pela lista a partir do início. NULL se não houver.
+   Usada pelo desejo "Mostre o caminho" do planeta do Ser. */
+Planeta *primeiroNaoVisitado(Planeta *inicio);
+
 #endif

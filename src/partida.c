@@ -2,7 +2,8 @@
 #include "constantes.h"
 
 static ProgressoPartida progresso = { 
-     .combustivel = COMBUSTIVEL_INICIAL };
+     .combustivel = COMBUSTIVEL_INICIAL,
+     .visitasSer = 0 };
 
 ProgressoPartida *progressoPartida(void)
 {

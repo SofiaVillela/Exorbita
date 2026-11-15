@@ -6,11 +6,12 @@
 #include "exploracao.h"
 #include "mapa_estelar.h"
 #include "partida.h"
+#include "dialogo.h"
 
 #include <math.h>
 #include <stdlib.h>
 
-typedef enum { EXPLORANDO, CONVERSANDO, TRIPULACAO, COMUNICACOES, MAPA } ModoNave;
+typedef enum { EXPLORANDO, CONVERSANDO, TRIPULACAO, COMUNICACOES, MAPA, FIM } ModoNave;
 enum { SEM_ALVO = -1, TERMINAL_EQUIPE = TOTAL_TRIPULANTES,
        TERMINAL_MAPA, TERMINAL_COMUNICACOES, TOTAL_TERMINAIS = 3 };
 
@@ -161,7 +162,7 @@ static int alvoProximo(void)
     int proximo = SEM_ALVO;
     float menor = 46 * 46;
     for (int i = 0; i < TOTAL_TRIPULANTES; i++) {
-        if (i == controlado) {
+        if (i == controlado || !progressoPartida()->tripulacao[i].vivo) {
             continue;
         }
         float dx = jogador.x - pesTripulantes[i].x;
@@ -243,6 +244,53 @@ static void trocarControlado(void)
     direcao = 0;
 }
 
+/* Mortos não ficam na sala: não bloqueiam a passagem nem são desenhados.
+   Quem está sendo controlado também não é obstáculo para si mesmo. */
+static void atualizarObstaculos(void)
+{
+    ProgressoPartida *jogo = progressoPartida();
+    for (int i = 0; i < TOTAL_TRIPULANTES; i++) {
+        if (i == jogo->controlado || !jogo->tripulacao[i].vivo) {
+            obstaculos[i].largura = 0;
+        } else {
+            obstaculos[i] = (ObstaculoExploracao){
+                pesTripulantes[i].x - 11, pesTripulantes[i].y - 8, 22, 8
+            };
+        }
+    }
+}
+
+void entrarTelaNave(void)
+{
+    ProgressoPartida *jogo = progressoPartida();
+    int desceu = jogo->controlado;
+
+    /* Quem desceu não voltou (armadilha do Ser): o controle passa
+       para o próximo vivo, que aparece onde estava parado. */
+    if (!jogo->tripulacao[desceu].vivo) {
+        int proximo = -1;
+        for (int passos = 1; passos <= TOTAL_TRIPULANTES; passos++) {
+            int i = (desceu + passos) % TOTAL_TRIPULANTES;
+            if (jogo->tripulacao[i].vivo) {
+                proximo = i;
+                break;
+            }
+        }
+        if (proximo < 0) {
+            modo = FIM;            /* ninguém restou a bordo */
+            atualizarObstaculos();
+            return;
+        }
+        jogo->controlado = proximo;
+        jogador = (PontoExploracao){ pesTripulantes[proximo].x, pesTripulantes[proximo].y };
+        quadro = 0;
+        direcao = 0;
+    }
+
+    modo = EXPLORANDO;
+    atualizarObstaculos();
+}
+
 Tela atualizarTelaNave(void)
 {
     atualizarFundo();
@@ -251,6 +299,12 @@ Tela atualizarTelaNave(void)
     if (dt > 0.1f) dt = 0.1f;
     if (tempoMarcado > 0) tempoMarcado -= dt;
     if (tempoAviso > 0) tempoAviso -= dt;
+    if (modo == FIM) {
+        if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER)) {
+            return TELA_INICIO;
+        }
+        return TELA_NAVE;
+    }
     if (modo == MAPA) {
         if (atualizarMapaEstelar()) {
             modo = EXPLORANDO;
@@ -332,8 +386,9 @@ static void desenharPessoas(void)
             int troca = ordem[j]; ordem[j] = ordem[j - 1]; ordem[j - 1] = troca;
         }
     }
+    const Tripulante *tripulacao = progressoPartida()->tripulacao;
     for (int i = 0; i < TOTAL_TRIPULANTES; i++) {
-        if (i == controlado) {
+        if (i == controlado || !tripulacao[i].vivo) {
             continue;
         }
         DrawEllipse((int)pesTripulantes[i].x, (int)pesTripulantes[i].y - 3, 13, 4, Fade(BLACK, 0.3f));
@@ -344,7 +399,7 @@ static void desenharPessoas(void)
         if (indice == TOTAL_TRIPULANTES) {
             /* quem eu controlo: anda com a folha dele */
             personagem(tripulantes[controlado], (Vector2){ jogador.x, jogador.y }, quadro, direcao);
-        }else if (indice != controlado) {
+        }else if (indice != controlado && tripulacao[indice].vivo) {
             /* os outros, parados de frente */
             personagem(tripulantes[indice], pesTripulantes[indice], 0, 0);
         }
@@ -394,14 +449,17 @@ static void desenharIndicacoes(void)
 
 static void desenharConversa(void)
 {
-    DrawRectangle(0, 0, LARGURA_VIRTUAL, ALTURA_VIRTUAL, Fade(BLACK, 0.25f));
-    caixa(16, 238, 608, 106);
-    DrawRectangle(26, 253, 52, 74, GetColor(0x30283FFF));
-    personagem(tripulantes[interlocutor], (Vector2){ 52, 318 }, 0, 0);
-    texto(progressoPartida()->tripulacao[interlocutor].nome, 92, 250, 8, COR_MARCADOR);
-    texto(falas[interlocutor][pagina], 92, 271, 8, COR_TITULO);
-    texto(TextFormat("%d/2", pagina + 1), 92, 326, 8, COR_SUBTITULO);
-    texto(pagina == 0 ? "E / ENTER  Continuar" : "E / ENTER  Encerrar", 440, 326, 8, COR_MENU);
+    /* Rosto: a parte de cima do primeiro quadro da folha (de frente). */
+    Falante falante = { progressoPartida()->tripulacao[interlocutor].nome,
+                        tripulantes[interlocutor], (Rectangle){ 4, 0, 36, 36 } };
+    const char *acao = "Continuar";
+    bool temMais = true;
+    if (pagina == 1) {
+        acao = "Encerrar";
+        temMais = false;
+    }
+    desenharFala(&falante, falas[interlocutor][pagina],
+                 TextFormat("%d/2   E / ENTER  %s", pagina + 1, acao), temMais);
 }
 
 static void desenharTripulacao(void)
@@ -414,7 +472,15 @@ static void desenharTripulacao(void)
         int x = 54 + i * 88;
         DrawRectangle(x, 126, 70, 84, GetColor(0x30283FFF));
         if (i == inspecionado) DrawRectangleLines(x, 126, 70, 84, COR_MARCADOR);
-        personagem(tripulantes[i], (Vector2){ (float)x + 35, 194 }, 0, 0);
+        if (progressoPartida()->tripulacao[i].vivo) {
+            personagem(tripulantes[i], (Vector2){ (float)x + 35, 194 }, 0, 0);
+        } else {
+            DrawTextureRec(tripulantes[i],
+                           (Rectangle){ 0, 0, LARGURA_PERSONAGEM, ALTURA_PERSONAGEM },
+                           (Vector2){ (float)x + 35 - LARGURA_PERSONAGEM / 2, 194 - ALTURA_PERSONAGEM },
+                           Fade(WHITE, 0.25f));
+            texto("MORTO", (float)x + 15, 160, 8, COR_ALERTA);
+        }
         texto(TextFormat("%02d", i + 1), (float)x + 27, 218, 8,
               i == inspecionado ? COR_MARCADOR : COR_MENU);
     }
@@ -430,7 +496,7 @@ static void desenharComunicacoes(void)
     DrawRectangle(80, 146, 6, 6, COR_MARCADOR);
     texto("CANAL EM ESPERA", 96, 146, 8, COR_MARCADOR);
     texto(progressoPartida()->temTradutor ?
-          "Tradutor recebido do robô cientista.\n\nEle será usado ao conversar com o visitante.\nA leitura do tom de voz pode falhar." :
+          "Tradutor a bordo.\n\nEle será usado ao conversar com o visitante.\nA leitura do tom de voz pode falhar." :
           "Nenhuma transmissão recebida.\n\nO cientista recebe visitantes em seu planeta.\nUse o mapa estelar para pousar e conhecê-lo.",
           80, 174, 8, COR_MENU);
     texto("E / ENTER / ESC  Voltar à nave", 80, 250, 8, COR_TITULO);
@@ -446,6 +512,13 @@ void desenharTelaNave(void)
     DrawTexture(sala, 0, 0, WHITE);
     desenharPessoas();
     if (modo == EXPLORANDO) desenharIndicacoes();
+    if (modo == FIM) {
+        DrawRectangle(0, 0, LARGURA_VIRTUAL, ALTURA_VIRTUAL, Fade(BLACK, 0.75f));
+        caixa(96, 120, 448, 110);
+        texto("NINGUÉM RESTOU A BORDO", 120, 140, 16, COR_ALERTA);
+        texto("A nave segue à deriva, em silêncio.", 120, 176, 8, COR_MENU);
+        texto("ENTER / ESC  Voltar ao menu", 120, 206, 8, COR_TITULO);
+    }
     else if (modo == CONVERSANDO) desenharConversa();
     else if (modo == TRIPULACAO) desenharTripulacao();
     else if (modo == COMUNICACOES) desenharComunicacoes();
