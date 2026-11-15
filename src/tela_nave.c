@@ -488,30 +488,68 @@ static void desenharConversa(void)
                  TextFormat("%d/2   E / ENTER  %s", pagina + 1, acao), temMais);
 }
 
+/* Traço principal de cada um, na mesma ordem de tripulacao.c. */
+static const char *tracoPrincipal[TOTAL_TRIPULANTES] = {
+    "Impulsivo", "Inteligente", "Curioso", "Carismática", "Sortuda", "Egoísta"
+};
+
+/* Escreve centralizado em x. */
+static void textoCentrado(const char *s, float x, float y, Color cor)
+{
+    float largura = MeasureTextEx(fontePadrao(), s, 8, 0).x;
+    texto(s, x - largura / 2, y, 8, cor);
+}
+
 static void desenharTripulacao(void)
 {
+    const Tripulante *tripulacao = progressoPartida()->tripulacao;
     DrawRectangle(0, 0, LARGURA_VIRTUAL, ALTURA_VIRTUAL, Fade(BLACK, 0.7f));
-    caixa(32, 52, 576, 250);
-    texto("TRIPULAÇÃO", 52, 72, 16, COR_TITULO);
-    texto("Seis tripulantes a bordo", 52, 100, 8, COR_SUBTITULO);
+    caixa(24, 44, 592, 272);
+    texto("TRIPULAÇÃO", 44, 60, 16, COR_TITULO);
+
+    int vivos = 0;
     for (int i = 0; i < TOTAL_TRIPULANTES; i++) {
-        int x = 54 + i * 88;
-        DrawRectangle(x, 126, 70, 84, GetColor(0x30283FFF));
-        if (i == inspecionado) DrawRectangleLines(x, 126, 70, 84, COR_MARCADOR);
-        if (progressoPartida()->tripulacao[i].vivo) {
-            personagem(tripulantes[i], (Vector2){ (float)x + 35, 194 }, 0, 0);
+        if (tripulacao[i].vivo) {
+            vivos++;
+        }
+    }
+    texto(TextFormat("%d de %d a bordo", vivos, TOTAL_TRIPULANTES), 44, 84, 8, COR_SUBTITULO);
+
+    /* Retrato, nome e traço de cada um. */
+    for (int i = 0; i < TOTAL_TRIPULANTES; i++) {
+        int x = 46 + i * 94;
+        float centro = (float)x + 35;
+        DrawRectangle(x, 104, 70, 84, GetColor(0x30283FFF));
+        if (i == inspecionado) DrawRectangleLines(x, 104, 70, 84, COR_MARCADOR);
+        if (tripulacao[i].vivo) {
+            personagem(tripulantes[i], (Vector2){ centro, 172 }, 0, 0);
         } else {
             DrawTextureRec(tripulantes[i],
                            (Rectangle){ 0, 0, LARGURA_PERSONAGEM, ALTURA_PERSONAGEM },
-                           (Vector2){ (float)x + 35 - LARGURA_PERSONAGEM / 2, 194 - ALTURA_PERSONAGEM },
+                           (Vector2){ centro - LARGURA_PERSONAGEM / 2, 172 - ALTURA_PERSONAGEM },
                            Fade(WHITE, 0.25f));
-            texto("MORTO", (float)x + 15, 160, 8, COR_ALERTA);
+            textoCentrado("MORTO", centro, 138, COR_ALERTA);
         }
-        texto(TextFormat("%02d", i + 1), (float)x + 27, 218, 8,
-              i == inspecionado ? COR_MARCADOR : COR_MENU);
+        Color corNome = COR_MENU;
+        if (i == inspecionado) {
+            corNome = COR_MARCADOR;
+        }
+        textoCentrado(tripulacao[i].nome, centro, 196, corNome);
+        textoCentrado(tracoPrincipal[i], centro, 210, GetColor(0x68D8CDFF));
     }
-    texto(progressoPartida()->tripulacao[inspecionado].nome, 52, 246, 8, COR_TITULO);
-    texto("SETAS  Escolher   ENTER  Localizar   ESC  Voltar", 52, 278, 8, COR_MENU);
+
+    /* Linha do tripulante escolhido. */
+    const Tripulante *t = &tripulacao[inspecionado];
+    const char *situacao = ".";
+    if (!t->vivo) {
+        situacao = ", morto.";
+    } else if (inspecionado == progressoPartida()->controlado) {
+        situacao = ", é quem desce.";
+    }
+    texto(TextFormat("%s, %d anos%s", t->nome, t->idade, situacao), 44, 240, 8, COR_TITULO);
+    texto("Os traços podem influenciar os resultados.", 44, 256, 8, COR_SUBTITULO);
+
+    texto("SETAS  Escolher   ENTER  Localizar   ESC  Voltar", 44, 290, 8, COR_MENU);
 }
 
 static void desenharComunicacoes(void)
