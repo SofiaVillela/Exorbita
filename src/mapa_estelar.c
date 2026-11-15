@@ -339,3 +339,24 @@ Planeta *listaPlanetasMapa(void)
 {
     return lista;
 }
+
+void reiniciarMapaEstelar(void)
+{
+    if (lista == NULL) {
+        return;
+    }
+    /* Percorre a lista circular e devolve cada planeta ao que está em dados[]. */
+    Planeta *atual = lista;
+    do {
+        int i = indiceDe(atual);
+        atual->visitado = false;
+        atual->bloqueado = dados[i].bloqueado;
+        atual = atual->prox;
+    } while (atual != lista);
+
+    selecionado = lista;
+    aberto = false;
+    viagemSolicitada = TELA_NAVE;
+    aviso = NULL;
+    tempoAviso = 0;
+}

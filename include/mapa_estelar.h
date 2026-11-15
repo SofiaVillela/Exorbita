@@ -16,6 +16,10 @@ bool atualizarMapaEstelar(void);
 void desenharMapaEstelar(void);
 void encerrarMapaEstelar(void);
 
+/* Nova partida: nenhum planeta visitado, Via Láctea bloqueada de novo
+   e o painel volta a abrir no primeiro planeta. */
+void reiniciarMapaEstelar(void);
+
 /* Início da lista circular de planetas (NULL antes de iniciar).
    O planeta do Ser usa para o desejo "Mostre o caminho". */
 Planeta *listaPlanetasMapa(void);

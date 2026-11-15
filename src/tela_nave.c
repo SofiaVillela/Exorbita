@@ -35,6 +35,12 @@ static const char *arquivosTripulantes[TOTAL_TRIPULANTES] = {
     "assets/imagens/tripulante_loiro.png",
     "assets/imagens/tripulante_preto.png"
 };
+/* Onde cada tripulante começa. pesTripulantes muda durante o jogo
+   (o Tab deixa cada um onde parou); pesIniciais guarda o começo. */
+static const Vector2 pesIniciais[TOTAL_TRIPULANTES] = {
+    { 120, 260 }, { 200, 300 }, { 270, 250 },
+    { 380, 300 }, { 450, 255 }, { 540, 290 }
+};
 static Vector2 pesTripulantes[TOTAL_TRIPULANTES] = {
     { 120, 260 }, { 200, 300 }, { 270, 250 },
     { 380, 300 }, { 450, 255 }, { 540, 290 }
@@ -258,6 +264,25 @@ static void atualizarObstaculos(void)
             };
         }
     }
+}
+
+void reiniciarTelaNave(void)
+{
+    for (int i = 0; i < TOTAL_TRIPULANTES; i++) {
+        pesTripulantes[i] = pesIniciais[i];
+    }
+    int controlado = progressoPartida()->controlado;
+    jogador = (PontoExploracao){ pesTripulantes[controlado].x, pesTripulantes[controlado].y };
+    direcao = 1;
+    quadro = 0;
+    tempoAnimacao = 0;
+    alvo = SEM_ALVO;
+    marcado = SEM_ALVO;
+    tempoMarcado = 0;
+    tempoAviso = 0;
+    inspecionado = 0;
+    modo = EXPLORANDO;
+    atualizarObstaculos();
 }
 
 void entrarTelaNave(void)

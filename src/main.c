@@ -12,6 +12,7 @@
 #include "tela_final.h"
 #include "tela_intro.h"
 #include "partida.h"
+#include "mapa_estelar.h"
 
 int main(void)
 {
@@ -73,7 +74,14 @@ int main(void)
             if (tela == TELA_ROBO) entrarTelaRobo();
             if (tela == TELA_SER) entrarTelaSer();
             if (tela == TELA_FINAL) entrarTelaFinal();
-            if (tela == TELA_INTRO) entrarTelaIntro();
+            if (tela == TELA_INTRO) {
+                /* Jogar no menu começa uma partida nova do zero. */
+                iniciarPartida();
+                reiniciarMapaEstelar();
+                reiniciarTelaNave();
+                reiniciarTelaRobo();
+                entrarTelaIntro();
+            }
             /* Voltou de um planeta para a nave (não do menu): confere
                quem está vivo e quem passa a ser controlado. */
             if (tela == TELA_NAVE && anterior != TELA_INICIO && anterior != TELA_INTRO) entrarTelaNave();

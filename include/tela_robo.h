@@ -3,6 +3,7 @@
 #include "telas.h"
 void iniciarTelaRobo(void);
 void entrarTelaRobo(void);
+void reiniciarTelaRobo(void);
 Tela atualizarTelaRobo(void);
 void desenharTelaRobo(void);
 void encerrarTelaRobo(void);

@@ -28,6 +28,15 @@ void iniciarTelaRobo(void)
     iniciarLaboratorio(&laboratorio,MAPA_LAB_PADRAO);
 }
 
+/* Nova partida: o desafio e a conversa com o cientista começam do zero. */
+void reiniciarTelaRobo(void)
+{
+    iniciarLaboratorio(&laboratorio,MAPA_LAB_PADRAO);
+    conversouCientista=false;
+    mostrarDica=false;
+    paginaCientista=0;
+}
+
 void entrarTelaRobo(void)
 {
     exploradorRobo.pes=(PontoExploracao){80,316};

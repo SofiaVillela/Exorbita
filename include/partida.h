@@ -21,6 +21,8 @@ typedef struct {
 } ProgressoPartida;
 
 ProgressoPartida *progressoPartida(void);
+/* Começa uma partida nova: combustível inicial, tripulação original,
+   nenhum planeta concluído. Chamada ao escolher Jogar no menu. */
 void iniciarPartida(void);
 Tripulante *tripulanteControlado(void);
 
