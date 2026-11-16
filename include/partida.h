@@ -19,6 +19,7 @@ typedef struct {
     bool semArConcluido;       /* pedaço do mapa trazido para a nave */
     int combustivel;   /* combustível atual da nave; o painel de planetas gasta */
     int visitasSer;    /* pousos no planeta do Ser; decide a chance de ele aparecer */
+    bool tanqueSerUsado;   /* "Encher o tanque" já foi pedido: o Ser só dá uma vez por partida */
     Tripulante tripulacao[TOTAL_TRIPULANTES];
     int controlado;
 } ProgressoPartida;

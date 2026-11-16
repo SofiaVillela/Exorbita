@@ -12,6 +12,7 @@
    na tela de FIM, Enter volta ao menu. */
 
 #include <math.h>
+#include <stdio.h>
 #include "raylib.h"
 #include "constantes.h"
 #include "recursos.h"
@@ -284,6 +285,47 @@ static void desenharFinalBom(void)
     }
 }
 
+/* Texto de 8 px centralizado na tela. */
+static void centralizado(const char *texto, int y, Color cor)
+{
+    int largura = (int)MeasureTextEx(fontePadrao(), texto, 8, 0).x;
+    DrawTextEx(fontePadrao(), texto, (Vector2){ (float)(LARGURA_VIRTUAL / 2 - largura / 2), (float)y },
+               8, 0, cor);
+}
+
+/* Final bom: quem voltou para casa e com que idade (os anos perdidos
+   e devolvidos no planeta do Ser aparecem aqui). Embaixo, quem morreu. */
+static void desenharQuemVoltou(void)
+{
+    const Tripulante *tripulacao = progressoPartida()->tripulacao;
+    const char *titulo = "VOLTARAM PARA CASA";
+    if (tripulantesVivos(tripulacao) == 1) {
+        titulo = "VOLTOU PARA CASA";   /* só um: singular */
+    }
+    centralizado(titulo, 104, COR_SUBTITULO);
+
+    int y = 124;
+    char mortos[128] = "";
+    int usados = 0;         /* quantos caracteres de mortos[] já foram escritos */
+    for (int i = 0; i < TOTAL_TRIPULANTES; i++) {
+        if (tripulacao[i].vivo) {
+            centralizado(TextFormat("%s, %d anos", tripulacao[i].nome, tripulacao[i].idade), y, COR_TITULO);
+            y += 14;
+        } else {
+            /* Junta os nomes separados por vírgula. */
+            const char *separador = "";
+            if (usados > 0) {
+                separador = ", ";
+            }
+            usados += snprintf(mortos + usados, sizeof mortos - (size_t)usados, "%s%s",
+                               separador, tripulacao[i].nome);
+        }
+    }
+    if (usados > 0) {
+        centralizado(TextFormat("Ficaram pelo caminho: %s.", mortos), y + 10, COR_ALERTA);
+    }
+}
+
 void desenharTelaFinal(void)
 {
     if (!iniciou) {
@@ -303,9 +345,17 @@ void desenharTelaFinal(void)
     ClearBackground(BLACK);
     const char *fim = "FIM";
     int largura = (int)MeasureTextEx(fontePadrao(), fim, 32, 2).x;
+    /* No final bom o FIM sobe, para caber a lista de quem voltou. */
+    int yFim = ALTURA_VIRTUAL / 2 - 16;
+    if (final == FINAL_BOM) {
+        yFim = 48;
+    }
     DrawTextEx(fontePadrao(), fim,
-               (Vector2){ (float)(LARGURA_VIRTUAL / 2 - largura / 2), (float)(ALTURA_VIRTUAL / 2 - 16) },
+               (Vector2){ (float)(LARGURA_VIRTUAL / 2 - largura / 2), (float)yFim },
                32, 2, COR_TITULO);
+    if (final == FINAL_BOM) {
+        desenharQuemVoltou();
+    }
 
     if (tempo >= fimDaAnimacao + ESPERA_TECLA) {
         const char *dica = "ENTER  Voltar ao menu";

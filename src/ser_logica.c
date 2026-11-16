@@ -7,13 +7,13 @@
 /* Vetor fixo com todos os desejos, na ordem em que aparecem na lista. */
 static const Desejo desejos[TOTAL_DESEJOS] = {
     { DESEJO_TANQUE,       "Encher o tanque.",
-      "Combustível completo." },
+      "Combustível completo. O Ser só dá uma vez." },
     { DESEJO_INTELIGENCIA, "Quero entender mais.",
       "+15 de inteligência." },
     { DESEJO_SORTE,        "Que a sorte me acompanhe.",
       "+20 de sorte." },
-    { DESEJO_REJUVENESCER, "Quero ser jovem de novo.",
-      "Você volta a ter 18 anos." },
+    { DESEJO_REJUVENESCER, "Devolva os anos perdidos.",
+      "O mais velho a bordo volta a ter 18 anos." },
     { DESEJO_REVIVER,      "Traga de volta quem perdemos.",
       "Um tripulante morto volta à nave." },
     { DESEJO_CAMINHO,      "Mostre o caminho.",
@@ -69,6 +69,20 @@ int primeiroMorto(const Tripulante tripulacao[])
     return -1;
 }
 
+/* Índice do tripulante vivo mais velho (no empate, o primeiro), ou -1
+   se não há ninguém vivo. Busca do maior em um vetor. */
+static int maisVelhoVivo(const Tripulante tripulacao[])
+{
+    int maisVelho = -1;
+    for (int i = 0; i < TOTAL_TRIPULANTES; i++) {
+        if (tripulacao[i].vivo &&
+            (maisVelho < 0 || tripulacao[i].idade > tripulacao[maisVelho].idade)) {
+            maisVelho = i;
+        }
+    }
+    return maisVelho;
+}
+
 /* Soma um ganho a um traço sem passar de TRACO_MAXIMO. */
 static int somarTraco(int valor, int ganho)
 {
@@ -86,7 +100,7 @@ static bool desejoLiberado(const ProgressoPartida *jogo, int quemDesceu,
     const Tripulante *t = &jogo->tripulacao[quemDesceu];
 
     if (tipo == DESEJO_TANQUE) {
-        return true;
+        return !jogo->tanqueSerUsado;   /* só uma vez por partida */
     }
     if (tipo == DESEJO_INTELIGENCIA) {
         return t->tracos.inteligencia < TRACO_MAXIMO;
@@ -95,8 +109,10 @@ static bool desejoLiberado(const ProgressoPartida *jogo, int quemDesceu,
         return t->tracos.sorte < TRACO_MAXIMO;
     }
     if (tipo == DESEJO_REJUVENESCER) {
+        int maisVelho = maisVelhoVivo(jogo->tripulacao);
         return t->tracos.carisma >= MINIMO_CARISMA_REJUVENESCER &&
-               t->idade > IDADE_REJUVENESCIDA;
+               maisVelho >= 0 &&
+               jogo->tripulacao[maisVelho].idade > IDADE_REJUVENESCIDA;
     }
     if (tipo == DESEJO_REVIVER) {
         return t->tracos.sorte >= MINIMO_SORTE_REVIVER &&
@@ -137,6 +153,7 @@ const char *aplicarDesejo(ProgressoPartida *jogo, int quemDesceu,
 
     if (tipo == DESEJO_TANQUE) {
         jogo->combustivel = COMBUSTIVEL_MAXIMO;
+        jogo->tanqueSerUsado = true;
         snprintf(texto, sizeof texto,
                  "A luz desce até a nave.\nO tanque está cheio: combustível %d.",
                  jogo->combustivel);
@@ -151,11 +168,17 @@ const char *aplicarDesejo(ProgressoPartida *jogo, int quemDesceu,
                  "Uma faísca dourada fica presa no traje de %s.\nSorte: %d.",
                  t->nome, t->tracos.sorte);
     } else if (tipo == DESEJO_REJUVENESCER) {
-        int antes = t->idade;
-        t->idade = IDADE_REJUVENESCIDA;
-        snprintf(texto, sizeof texto,
-                 "O manto do Ser envolve %s.\n%d anos ficam para trás: agora tem %d.",
-                 t->nome, antes, t->idade);
+        int maisVelho = maisVelhoVivo(jogo->tripulacao);
+        if (maisVelho >= 0) {
+            Tripulante *velho = &jogo->tripulacao[maisVelho];
+            int antes = velho->idade;
+            velho->idade = IDADE_REJUVENESCIDA;
+            snprintf(texto, sizeof texto,
+                     "O manto do Ser alcança a nave.\n%s tinha %d anos. Agora tem %d.",
+                     velho->nome, antes, velho->idade);
+        } else {
+            snprintf(texto, sizeof texto, "Nada acontece.");
+        }
     } else if (tipo == DESEJO_REVIVER) {
         int morto = primeiroMorto(jogo->tripulacao);
         if (morto >= 0) {
@@ -190,10 +213,20 @@ const char *aplicarDesejo(ProgressoPartida *jogo, int quemDesceu,
                  "A luz puxa %s para cima, rápido demais.\nO santuário some. Só resta o espaço.\n\n%s não voltou para a nave.",
                  t->nome, t->nome);
     } else if (tipo == DESEJO_TUDO) {
+        /* O Ser dá o tanque cheio, mas cobra em anos. Quem passa de
+           IDADE_MAXIMA não aguenta. */
+        jogo->combustivel = COMBUSTIVEL_MAXIMO;
         t->idade += ENVELHECER_TUDO;
-        snprintf(texto, sizeof texto,
-                 "O orbe escurece. \"Tudo tem um preço.\"\n%s sente os anos passarem de uma vez.\nAgora tem %d anos. O desejo se perdeu.",
-                 t->nome, t->idade);
+        if (t->idade > IDADE_MAXIMA) {
+            t->vivo = false;
+            snprintf(texto, sizeof texto,
+                     "O orbe escurece. \"Tudo tem um preço.\"\nO tanque da nave se enche.\nCom %d anos, o corpo de %s não aguenta.\n\n%s não voltou para a nave.",
+                     t->idade, t->nome, t->nome);
+        } else {
+            snprintf(texto, sizeof texto,
+                     "O orbe escurece. \"Tudo tem um preço.\"\nO tanque da nave se enche.\n%s envelhece %d anos de uma vez: agora tem %d.",
+                     t->nome, ENVELHECER_TUDO, t->idade);
+        }
     } else {
         snprintf(texto, sizeof texto, "Nada acontece.");
     }

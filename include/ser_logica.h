@@ -18,16 +18,17 @@
 
 typedef enum {
     /* para todos */
-    DESEJO_TANQUE,        /* combustível completo */
+    DESEJO_TANQUE,        /* combustível completo, uma vez por partida */
     DESEJO_INTELIGENCIA,  /* +15 de inteligência para quem desceu */
     DESEJO_SORTE,         /* +20 de sorte para quem desceu */
     /* liberados por traço */
-    DESEJO_REJUVENESCER,  /* quem desceu passa a ter 18 anos (carisma 50+) */
+    DESEJO_REJUVENESCER,  /* o mais velho a bordo passa a ter 18 anos (carisma 50+) */
     DESEJO_REVIVER,       /* o primeiro morto volta (sorte 55+) */
     DESEJO_CAMINHO,       /* próximo planeta não visitado conta como visitado (curiosidade 60+) */
     /* armadilhas */
     DESEJO_TERRA,         /* quem desceu morre (egoísmo 70+) */
-    DESEJO_TUDO,          /* quem pediu envelhece 30 anos (impulsividade 70+) */
+    DESEJO_TUDO,          /* enche o tanque, mas quem pediu envelhece 30 anos;
+                             acima de IDADE_MAXIMA, morre (impulsividade 70+) */
     TOTAL_DESEJOS
 } TipoDesejo;
 

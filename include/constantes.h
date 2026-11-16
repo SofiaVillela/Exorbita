@@ -103,6 +103,7 @@
 #define GANHO_INTELIGENCIA_SER       15
 #define GANHO_SORTE_SER              20
 #define ENVELHECER_TUDO              30   /* anos a mais para quem pediu tudo */
+#define IDADE_MAXIMA                 60   /* quem passa disso não aguenta: morre */
 #define TRACO_MAXIMO                 100
 #define IDADE_REJUVENESCIDA          18
 #define ESCALA_SER                   3   /* sprite de 64x100 desenhado 3x: 192x300 */

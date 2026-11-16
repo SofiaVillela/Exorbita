@@ -112,6 +112,9 @@ static void testarEfeitos(void)
     jogo->combustivel = 30;
     aplicarDesejo(jogo, BENTO, planetas, DESEJO_TANQUE);
     conferir(jogo->combustivel == COMBUSTIVEL_MAXIMO, "tanque fica no maximo");
+    TipoDesejo depois[TOTAL_DESEJOS];
+    int restantes = desejosDisponiveis(jogo, BENTO, planetas, depois);
+    conferir(!contem(depois, restantes, DESEJO_TANQUE), "tanque so uma vez por partida");
 
     aplicarDesejo(jogo, BENTO, planetas, DESEJO_INTELIGENCIA);
     conferir(jogo->tripulacao[BENTO].tracos.inteligencia == 50, "Bento: inteligencia 35 + 15 = 50");
@@ -119,8 +122,10 @@ static void testarEfeitos(void)
     aplicarDesejo(jogo, DORA, planetas, DESEJO_SORTE);
     conferir(jogo->tripulacao[DORA].tracos.sorte == TRACO_MAXIMO, "Dora: sorte 91 + 20 para em 100");
 
+    jogo->tripulacao[BENTO].idade = 53;
     aplicarDesejo(jogo, FLORA, planetas, DESEJO_REJUVENESCER);
-    conferir(jogo->tripulacao[FLORA].idade == IDADE_REJUVENESCIDA, "Flora fica com 18 anos");
+    conferir(jogo->tripulacao[BENTO].idade == IDADE_REJUVENESCIDA && jogo->tripulacao[FLORA].idade == 20,
+             "anos perdidos: o mais velho (Bento) fica com 18, Flora nao muda");
 
     jogo->tripulacao[ELIAS].vivo = false;
     aplicarDesejo(jogo, DORA, planetas, DESEJO_REVIVER);
@@ -130,8 +135,13 @@ static void testarEfeitos(void)
     conferir(planetas->prox->visitado, "caminho marca o ROBO como visitado");
     conferir(planetas->prox->prox->bloqueado, "sem os pedacos do mapa, a Via Lactea continua fechada");
 
+    jogo->combustivel = 10;
     aplicarDesejo(jogo, BENTO, planetas, DESEJO_TUDO);
-    conferir(jogo->tripulacao[BENTO].idade == 23 + ENVELHECER_TUDO, "Quero tudo: Bento envelhece 30 anos");
+    conferir(jogo->tripulacao[BENTO].idade == 18 + ENVELHECER_TUDO && jogo->tripulacao[BENTO].vivo &&
+             jogo->combustivel == COMBUSTIVEL_MAXIMO,
+             "Quero tudo: tanque cheio, Bento envelhece 30 anos e sobrevive");
+    aplicarDesejo(jogo, BENTO, planetas, DESEJO_TUDO);
+    conferir(!jogo->tripulacao[BENTO].vivo, "Quero tudo de novo: passa de 60 anos e morre");
 
     aplicarDesejo(jogo, CAIO, planetas, DESEJO_TERRA);
     conferir(!jogo->tripulacao[CAIO].vivo, "armadilha: Caio morre");
