@@ -10,7 +10,7 @@
 #include "fundo.h"
 #include "tela_info.h"
 
-#define ALTURA_LINHA_INFO 12
+#define ALTURA_LINHA_INFO 11
 #define ALTURA_LINHA_VAZIA 6   /* linha em branco ocupa meia altura */
 
 static const char *regras[] = {
@@ -32,9 +32,10 @@ static const char *regras[] = {
     "Eles mudam o que acontece nos planetas. Escolha bem quem desce.",
     "",
     "#PLANETAS",
-    "Robô: programe o caminho do robô com uma fila de comandos.",
+    "Robô: vença os circuitos montando uma fila de comandos.",
     "Extraterrestre: jogo de blefe. Um tradutor ajuda a entender.",
-    "Gigante: atravesse as áreas sem ser visto pelos olhos.",
+    "Gigante: junte três cristais sem pisar nas plantas brilhantes.",
+    "Sem Ar: o oxigênio acaba. Abra o portão e volte ao módulo.",
     "Ser: um desejo por visita. Nem todo pedido é bom."
 };
 

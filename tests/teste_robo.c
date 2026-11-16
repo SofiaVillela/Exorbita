@@ -143,11 +143,35 @@ static void testarCaminho(void)
              "linha curta vira casa livre e o S pode estar em qualquer lugar");
 }
 
+/* Todo circuito precisa ter saída alcançável com a fila (16 comandos),
+   e seguir o caminho mais curto precisa mesmo levar à saída. */
+static void testarCircuitos(void)
+{
+    int anterior = 0;
+    for (int i = 0; i < LAB_TOTAL_CIRCUITOS; i++) {
+        Laboratorio lab;
+        Comando caminho[ROBO_MAX_COMANDOS];
+        iniciarLaboratorio(&lab, CIRCUITOS_LAB[i]);
+        int n = caminhoMaisCurto(&lab, caminho, ROBO_MAX_COMANDOS);
+        printf("circuito %d: caminho mais curto com %d comandos\n", i + 1, n);
+        CONFERIR(n > 0 && n <= ROBO_MAX_COMANDOS, "circuito tem solucao que cabe na fila");
+        CONFERIR(n >= anterior, "circuito nao e mais facil que o anterior");
+        anterior = n;
+        for (int k = 0; k < n; k++) adicionarComando(&lab, caminho[k]);
+        executarPrograma(&lab);
+        ResultadoPasso ultimo = PASSO_NADA;
+        while (lab.fase == ROBO_EXECUTANDO) ultimo = passoDoRobo(&lab);
+        CONFERIR(lab.fase == ROBO_VENCEU && ultimo == PASSO_SAIDA, "seguir o caminho mais curto vence o circuito");
+    }
+    CONFERIR(CIRCUITOS_LAB[LAB_TOTAL_CIRCUITOS - 1] == MAPA_LAB_PADRAO, "o ultimo circuito e o mapa padrao");
+}
+
 int main(void)
 {
     testarFila();
     testarLaboratorio();
     testarCaminho();
+    testarCircuitos();
     printf("\n%s (%d falha%s)\n", falhas ? "HA FALHAS" : "TUDO CERTO", falhas, falhas == 1 ? "" : "s");
     return falhas ? 1 : 0;
 }

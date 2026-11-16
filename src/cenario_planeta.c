@@ -1,6 +1,7 @@
 #include "cenario_planeta.h"
 #include "constantes.h"
 #include "recursos.h"
+#include "sons.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -97,6 +98,8 @@ bool atualizarExploradorPlaneta(ExploradorPlaneta *e, const MapaExploracao *piso
         while (e->tempo>=TEMPO_PASSO_PERSONAGEM) {
             e->tempo-=TEMPO_PASSO_PERSONAGEM;
             e->quadro=e->quadro%4+1;
+            /* Os quadros 1 e 3 são os de pé no chão: um som de passo em cada. */
+            if (e->quadro==1||e->quadro==3) tocarPasso(corrida);
         }
     } else { e->tempo=0; e->quadro=0; }
     return moveu;

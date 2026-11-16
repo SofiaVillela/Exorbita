@@ -21,6 +21,7 @@
 #include "partida.h"
 #include "lista_planetas.h"
 #include "mapa_estelar.h"
+#include "sons.h"
 
 #define TOTAL_PLANETAS_PAINEL 6
 #define INDICE_VIA_LACTEA (TOTAL_PLANETAS_PAINEL - 1)   /* última de dados[] */
@@ -39,14 +40,14 @@ typedef struct {
 } DadosPlaneta;
 
 static const DadosPlaneta dados[TOTAL_PLANETAS_PAINEL] = {
-    { "SEM AR", "assets/imagens/planeta_sem_ar.png", NULL,
-      CUSTO_SEM_AR, TELA_NAVE, false },
     { "GIGANTE", "assets/imagens/planeta_gigante.png", NULL,
       CUSTO_GIGANTE, TELA_GIGANTE, false },
     { "SER", "assets/imagens/planeta_ser.png", NULL,
       CUSTO_SER, TELA_SER, false },
     { "ROBÔ", "assets/imagens/planeta_robo.png", NULL,
       CUSTO_ROBO, TELA_ROBO, false },
+    { "SEM AR", "assets/imagens/planeta_sem_ar.png", NULL,
+      CUSTO_SEM_AR, TELA_SEM_AR, false },
     { "EXTRATERRESTRE", "assets/imagens/planeta_extraterrestre.png", NULL,
       CUSTO_EXTRATERRESTRE, TELA_EXTRATERRESTRE, false },
     { "VIA LÁCTEA", "assets/imagens/via_lactea.png",
@@ -133,6 +134,7 @@ static void avisar(const char *mensagem)
 {
     aviso = mensagem;
     tempoAviso = TEMPO_AVISO_PAINEL;
+    tocarSom(SOM_NEGADO);      /* todo aviso daqui é uma viagem que não pôde ser feita */
 }
 
 /* Tenta viajar para o planeta selecionado. Devolve true se a viagem
@@ -233,9 +235,11 @@ bool atualizarMapaEstelar(void)
     /* Setas andam pela lista: ant para a esquerda, prox para a direita. */
     if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
         selecionado = selecionado->ant;
+        tocarSom(SOM_UI_MOVER);
         aviso = NULL;
     } else if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
         selecionado = selecionado->prox;
+        tocarSom(SOM_UI_MOVER);
         aviso = NULL;
     }
 

@@ -29,6 +29,21 @@ Tripulante *tripulanteControlado(void)
     return &progresso.tripulacao[progresso.controlado];
 }
 
+int pedacosMapaObtidos(void)
+{
+    int pedacos = 0;
+    if (progresso.semArConcluido) {
+        pedacos++;
+    }
+    if (progresso.extraterrestreConcluido) {
+        pedacos++;
+    }
+    if (progresso.giganteConcluido) {
+        pedacos++;
+    }
+    return pedacos;
+}
+
 bool partidaEmAndamento(void)
 {
     return emAndamento;

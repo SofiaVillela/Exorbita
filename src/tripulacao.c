@@ -27,3 +27,39 @@ void iniciarTripulacao(Tripulante tripulacao[]){
         tripulacao[i] = iniciais[i];
     }
 }
+
+const char *destaqueTripulante(const Tracos *tracos)
+{
+    if (tracos == 0) {
+        return "";
+    }
+    /* Mesma ordem dos campos do struct Tracos. */
+    const int valores[6] = { tracos->egoismo, tracos->inteligencia, tracos->carisma,
+                             tracos->impulsividade, tracos->curiosidade, tracos->sorte };
+    static const char *frases[6] = {
+        "Sempre soube cuidar de si.",
+        "Tinha a mente mais afiada da nave.",
+        "Fazia todo mundo se sentir em casa.",
+        "Nunca esperou a hora certa para agir.",
+        "Queria ver atrás de cada pedra.",
+        "A sorte andou ao seu lado. Até hoje."
+    };
+    int maior = 0;
+    for (int i = 1; i < 6; i++) {
+        if (valores[i] > valores[maior]) {
+            maior = i;
+        }
+    }
+    return frases[maior];
+}
+
+int tripulantesVivos(const Tripulante tripulacao[])
+{
+    int vivos = 0;
+    for (int i = 0; i < TOTAL_TRIPULANTES; i++) {
+        if (tripulacao[i].vivo) {
+            vivos++;
+        }
+    }
+    return vivos;
+}

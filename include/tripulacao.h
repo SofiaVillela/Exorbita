@@ -23,4 +23,11 @@ typedef struct {
 
 void iniciarTripulacao(Tripulante tripulacao[]);
 
+/* Frase curta sobre o traço mais forte do tripulante (empate: o
+   primeiro na ordem do struct). Usada no memorial de quem não voltou. */
+const char *destaqueTripulante(const Tracos *tracos);
+
+/* Quantos tripulantes estão vivos. */
+int tripulantesVivos(const Tripulante tripulacao[]);
+
 #endif

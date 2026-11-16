@@ -57,6 +57,11 @@ typedef struct {
      S = início   . = livre   # = parede   L = lava   E = saída */
 extern const char *const MAPA_LAB_PADRAO[LAB_LINHAS];
 
+/* Os circuitos do desafio, do mais simples ao mais difícil. O último é
+   o MAPA_LAB_PADRAO. O tradutor só sai depois de vencer todos. */
+#define LAB_TOTAL_CIRCUITOS 3
+extern const char *const *const CIRCUITOS_LAB[LAB_TOTAL_CIRCUITOS];
+
 /* Monta o laboratório a partir de um mapa em texto. */
 void iniciarLaboratorio(Laboratorio *lab, const char *const linhas[LAB_LINHAS]);
 

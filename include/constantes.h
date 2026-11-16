@@ -108,6 +108,51 @@
 #define IDADE_REJUVENESCIDA          18
 #define ESCALA_SER                   3   /* sprite de 64x100 desenhado 3x: 192x300 */
 
+/* Planeta do gigante (gigante_logica.c).
+   Cada infração soma pontos. Com GIGANTE_PONTOS_REACAO o gigante reage
+   (o chão treme); com GIGANTE_LIMITE_INFRACOES ele pega o tripulante.
+   Sem novas infrações por GIGANTE_TEMPO_CALMA segundos ele começa a se
+   acalmar e perdoa 1 ponto a cada GIGANTE_TEMPO_PERDAO segundos. */
+#define GIGANTE_LIMITE_INFRACOES   5
+#define GIGANTE_PONTOS_REACAO      3
+#define GIGANTE_PONTOS_PLANTA      1     /* pisou numa planta brilhante */
+#define GIGANTE_PONTOS_HABITANTE   2     /* esbarrou em um habitante */
+#define GIGANTE_TEMPO_CALMA        6.0f
+#define GIGANTE_TEMPO_PERDAO       8.0f
+#define GIGANTE_RAIO_PLANTA        10.0f /* distância dos pés que amassa a planta */
+#define GIGANTE_RAIO_HABITANTE     17.0f /* distância dos pés que conta como esbarrão */
+#define GIGANTE_TEMPO_ATORDOADO    1.6f  /* habitante parado depois do esbarrão */
+#define GIGANTE_TEMPO_PULO         0.42f /* segundos no ar em cada pulo do habitante */
+#define GIGANTE_TEMPO_CHAO         0.20f /* pausa no chão entre dois pulos */
+#define GIGANTE_TEMPO_TREMOR       2.6f  /* a tela treme quando o gigante reage */
+#define GIGANTE_TEMPO_LENTO        3.5f  /* e fica difícil andar por este tempo */
+#define GIGANTE_FATOR_LENTO        0.45f
+/* Chance de convencer o gigante depois de pego: uma parte do traço, em %. */
+#define GIGANTE_APELO_CARISMA      100   /* "Explicar com calma": carisma inteiro */
+#define GIGANTE_APELO_INTELIGENCIA 90    /* "As regras não estavam claras" */
+#define GIGANTE_APELO_EGOISMO      85    /* "Pôr a culpa em outro" */
+/* O posto do planalto só abre com os três cristais de luz. Nos
+   destroços de uma sonda há uma célula que devolve à nave o
+   combustível gasto para chegar aqui. */
+#define GIGANTE_TOTAL_CRISTAIS     3
+#define GIGANTE_COMBUSTIVEL_CELULA 20
+
+/* Planeta sem ar (sem_ar_logica.c e pilha_mochila.c).
+   O oxigênio do traje vai de OXIGENIO_MAXIMO a 0 e cai o tempo todo. */
+#define MOCHILA_CAPACIDADE          4      /* itens que cabem na pilha */
+#define SEM_AR_CONSUMO_ANDANDO      1.5f   /* oxigênio por segundo, parado ou andando */
+#define SEM_AR_CONSUMO_CORRENDO     2.6f   /* correr chega antes, mas gasta mais */
+#define SEM_AR_CONSUMO_JATO         14.0f  /* a mais, dentro de um jato de gás */
+#define SEM_AR_RECARGA_CILINDRO     25
+#define SEM_AR_OXIGENIO_BAIXO       25     /* daqui para baixo a tela avisa */
+#define SEM_AR_CURIOSIDADE_OCULTO   60     /* curiosidade mínima para ver o cilindro escondido */
+#define SEM_AR_JATO_QUIETO          2.4f   /* segundos de cada fase do respiradouro */
+#define SEM_AR_JATO_AVISO           0.8f
+#define SEM_AR_JATO_ATIVO           1.4f
+#define SEM_AR_RAIO_JATO            26.0f  /* distância dos pés que o jato alcança */
+#define SEM_AR_RAIO_ITEM            18.0f  /* distância para pegar um item */
+#define SEM_AR_TEMPO_PORTAO         1.2f   /* segundos para o portão abrir */
+
 /* Tradutor (tradutor.c): chance de a leitura de tom acertar.
    Vai de MIN (inteligência 0) a MAX (inteligência 100), em linha reta. */
 #define TRADUTOR_PRECISAO_MIN  0.55f

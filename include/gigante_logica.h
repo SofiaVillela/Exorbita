@@ -1,54 +1,104 @@
+/* gigante_logica.h: regras do planeta do gigante, sem raylib.
+
+   O gigante observa o planalto. Pisar numa planta brilhante ou esbarrar
+   em um habitante é uma infração, e cada infração soma pontos. Com
+   pontos suficientes o gigante reage; no limite, ele pega o tripulante.
+   Quem foi pego tenta se explicar: cada resposta depende de um traço.
+   O posto do planalto guarda um pedaço do mapa e só abre com os três
+   cristais de luz, espalhados pelo planalto.
+   O sorteio fica com quem chama (a tela usa GetRandomValue), para que
+   as regras possam ser testadas sem abrir o jogo. */
+
 #ifndef GIGANTE_LOGICA_H
 #define GIGANTE_LOGICA_H
 
 #include <stdbool.h>
 #include "exploracao.h"
-
-#define GIGANTE_TOTAL_AREAS 4
-#define GIGANTE_TODAS_AREAS 15u
+#include "tripulacao.h"
 
 typedef enum {
-    GIGANTE_CALMO, GIGANTE_SUSPEITA, GIGANTE_ALERTA, GIGANTE_CAPTURADO
-} EstadoVigilanciaGigante;
+    GIGANTE_OBSERVANDO,   /* nenhuma infração */
+    GIGANTE_ALERTA,       /* há infrações recentes */
+    GIGANTE_REACAO,       /* muitas infrações: o chão treme */
+    GIGANTE_CALMA         /* há infrações, mas ele está se acalmando */
+} EstadoGigante;
 
 typedef enum {
-    INFRACAO_NENHUMA, INFRACAO_EXPOSICAO, INFRACAO_CORRIDA, INFRACAO_RESTRITA
+    INFRACAO_NENHUMA,
+    INFRACAO_PLANTA,
+    INFRACAO_HABITANTE
 } InfracaoGigante;
 
 typedef struct {
-    PontoExploracao origem;
-    float angulo, meioAngulo, alcance;
-    float tempoAberto, tempoFechado, defasagem;
-} OlhoGigante;
-
-typedef struct {
-    int area;
-    unsigned int areasVisitadas;
-    float alerta, tempo;
-    int infracoes, capturas;
-    bool concluido;
-    EstadoVigilanciaGigante estado;
-    InfracaoGigante ultimaInfracao;
-    bool vistoAntes, corridaAntes, restritoAntes;
+    int pontos;              /* 0 a GIGANTE_LIMITE_INFRACOES */
+    int infracoes;           /* quantas infrações já aconteceram neste pouso */
+    InfracaoGigante ultima;  /* a mais recente (o gigante lembra dela) */
+    float semInfracao;       /* segundos desde a última infração */
+    float perdao;            /* segundos acumulados para perdoar 1 ponto */
 } VigilanciaGigante;
 
-void iniciarVigilanciaGigante(VigilanciaGigante *vigilancia, unsigned int visitadas,
-                              int capturas, bool concluido);
-bool olhoGiganteAberto(const OlhoGigante *olho, float tempo);
-/* Retorna a distância até a primeira cobertura; usada também para desenhar
-   o mesmo campo de visão que a lógica considera. Ângulos em radianos. */
-float alcanceRaioGigante(PontoExploracao origem, float angulo, float alcance,
-                         const ObstaculoExploracao *coberturas, int quantidade);
-bool olhoGiganteVe(const OlhoGigante *olho, PontoExploracao pessoa, float tempo,
-                   const ObstaculoExploracao *coberturas, int quantidade);
-/* Infrações são registradas nas entradas de condições, não a cada frame.
-   Retorna true somente no instante em que uma nova captura ocorre. */
-bool atualizarVigilanciaGigante(VigilanciaGigante *vigilancia, bool visto,
-                                bool correndo, bool restrito, float dt);
-bool mudarAreaGigante(VigilanciaGigante *vigilancia, int direcao);
-bool confirmarCapturaGigante(VigilanciaGigante *vigilancia);
-bool concluirObjetivoGigante(VigilanciaGigante *vigilancia);
-const char *nomeEstadoGigante(EstadoVigilanciaGigante estado);
+/* O que o tripulante pode dizer depois de pego. */
+typedef enum {
+    APELO_EXPLICAR,   /* depende do carisma */
+    APELO_REGRAS,     /* depende da inteligência */
+    APELO_CULPAR,     /* depende do egoísmo */
+    TOTAL_APELOS
+} TipoApelo;
+
+typedef struct {
+    const char *fala;      /* o que o tripulante diz */
+    const char *detalhe;   /* de que traço depende */
+} Apelo;
+
+/* Habitante do planalto: um bichinho que anda aos pulos, de um lado
+   para o outro, entre minX e maxX. Só sai do lugar enquanto está no ar. */
+typedef struct {
+    float x, y;          /* pés */
+    float minX, maxX;
+    float velocidade;    /* pixels por segundo; o sinal é o sentido */
+    float relogio;       /* tempo dentro do ciclo pulo + pausa */
+    float atordoado;     /* segundos parado depois de um esbarrão */
+} HabitanteGigante;
+
+void iniciarVigilanciaGigante(VigilanciaGigante *vigilancia);
+
+/* Soma os pontos da infração. Devolve true quando chega ao limite
+   (o gigante pega o tripulante). */
+bool registrarInfracaoGigante(VigilanciaGigante *vigilancia, InfracaoGigante infracao);
+
+/* Passa o tempo sem infração. Devolve true no instante em que o
+   gigante perdoa 1 ponto. */
+bool acalmarGigante(VigilanciaGigante *vigilancia, float dt);
+
+EstadoGigante estadoGigante(const VigilanciaGigante *vigilancia);
+int pontosInfracaoGigante(InfracaoGigante infracao);
+const char *nomeEstadoGigante(EstadoGigante estado);
 const char *nomeInfracaoGigante(InfracaoGigante infracao);
+
+/* Apelo do vetor fixo, pelo tipo. */
+const Apelo *apeloGigante(TipoApelo tipo);
+/* Chance (0 a 100) de o apelo convencer o gigante. */
+int chanceApeloGigante(TipoApelo tipo, const Tracos *tracos);
+/* true se o sorteio (1 a 100) cair dentro da chance. */
+bool apeloConvenceu(int chance, int sorteio);
+
+void atualizarHabitanteGigante(HabitanteGigante *habitante, float dt);
+/* Altura do pulo neste instante, de 0 (no chão) a 1 (ponto mais alto). */
+float alturaPuloHabitante(const HabitanteGigante *habitante);
+bool habitanteEncostou(const HabitanteGigante *habitante, PontoExploracao pes);
+bool pisouNaPlanta(PontoExploracao planta, PontoExploracao pes);
+
+/* Cristais de luz. Os recolhidos ficam numa máscara de bits: o bit i
+   ligado quer dizer que o cristal i já está com a tripulação. */
+bool temCristalGigante(int cristais, int indice);
+/* Recolhe o cristal e devolve a máscara nova. Índice inválido ou
+   cristal já recolhido: devolve a mesma máscara. */
+int recolherCristalGigante(int cristais, int indice);
+int contarCristaisGigante(int cristais);
+/* O posto abre quando os três cristais foram recolhidos. */
+bool postoGiganteAbre(int cristais);
+/* Combustível da nave depois de usar a célula dos destroços (não
+   passa da capacidade do tanque). */
+int abastecerComCelulaGigante(int combustivel);
 
 #endif

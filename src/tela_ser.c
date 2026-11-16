@@ -18,6 +18,7 @@
 #include "mapa_estelar.h"
 #include "dialogo.h"
 #include "tela_ser.h"
+#include "sons.h"
 
 typedef enum {
     SER_EXPLORANDO,   /* andando pelo santuário */
@@ -128,6 +129,9 @@ Tela atualizarTelaSer(void)
     }
     tempo += dt;
     if (serVisivel() && aparecer < 1) {
+        if (aparecer == 0) {
+            tocarSom(SOM_SER_APARECE);     /* o Ser começa a surgir */
+        }
         aparecer += dt;
         if (aparecer > 1) {
             aparecer = 1;
@@ -159,12 +163,14 @@ Tela atualizarTelaSer(void)
             return TELA_SER;
         }
         if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) {
+            tocarSom(SOM_UI_MOVER);
             escolhida++;
             if (escolhida >= totalOpcoes) {
                 escolhida = 0;
             }
         }
         if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
+            tocarSom(SOM_UI_MOVER);
             escolhida--;
             if (escolhida < 0) {
                 escolhida = totalOpcoes - 1;
@@ -176,6 +182,7 @@ Tela atualizarTelaSer(void)
                                               opcoes[escolhida]);
             strncpy(resultado, texto, sizeof resultado - 1);
             resultado[sizeof resultado - 1] = '\0';
+            tocarSom(SOM_DESEJO);
             estado = SER_RESULTADO;
         }
         return TELA_SER;
