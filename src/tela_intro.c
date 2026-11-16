@@ -34,7 +34,7 @@ static const char *paginas[TOTAL_PAGINAS] = {
     "O caminho de volta é desconhecido.\n"
     "Os planetas desta galáxia podem ter as respostas.\n"
     "\n"
-    "Visitem todos os planetas.\n"
+    "Juntem os pedaços do mapa estelar.\n"
     "Só assim a rota para casa vai se abrir."
 };
 

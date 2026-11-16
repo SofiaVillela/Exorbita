@@ -9,6 +9,8 @@
 #include "dialogo.h"
 #include "pilha_mochila.h"
 #include "sons.h"
+#include "tela_final.h"
+#include "tanque.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -318,6 +320,15 @@ void entrarTelaNave(void)
         direcao = 0;
     }
 
+    /* Combustível não dá para nenhum planeta liberado: a nave fica
+       presa no espaço, e isso também é o final ruim. */
+    if (!algumDestinoAlcancavel()) {
+        marcarFinalSemCombustivel();
+        modo = FIM;
+        atualizarObstaculos();
+        return;
+    }
+
     modo = EXPLORANDO;
     atualizarObstaculos();
 }
@@ -331,7 +342,7 @@ Tela atualizarTelaNave(void)
     if (tempoMarcado > 0) tempoMarcado -= dt;
     if (tempoAviso > 0) tempoAviso -= dt;
     if (modo == FIM) {
-        return TELA_FINAL;   /* ninguém vivo: vai para o final ruim */
+        return TELA_FINAL;   /* ninguém vivo ou sem combustível: final ruim */
     }
     if (modo == MAPA) {
         if (atualizarMapaEstelar()) {
@@ -468,6 +479,18 @@ static void desenharPedacosDoMapa(void)
     }
     texto(TextFormat("%d/%d", obtidos, TOTAL_PEDACOS_MAPA), (float)(60 + TOTAL_PEDACOS_MAPA * 12), 324, 8,
           obtidos == TOTAL_PEDACOS_MAPA ? COR_MARCADOR : COR_TITULO);
+}
+
+/* Canto de baixo, à direita: o tanque de combustível em pé, com o
+   número ao lado. Fica na mesma altura das caixas da esquerda. */
+static void desenharCombustivel(void)
+{
+    int combustivel = progressoPartida()->combustivel;
+    caixa(572, 266, 52, 72);
+    desenharTanque(580, 272, 18, 60, combustivel, 0);
+    const char *numero = TextFormat("%d", combustivel);
+    float largura = MeasureTextEx(fontePadrao(), numero, 8, 0).x;
+    texto(numero, 612 - largura / 2, 296, 8, combustivel <= 20 ? COR_ALERTA : COR_TITULO);
 }
 
 static void desenharIndicacoes(void)
@@ -611,6 +634,7 @@ void desenharTelaNave(void)
     if (modo == EXPLORANDO) {
         desenharIndicacoes();
         desenharPedacosDoMapa();
+        desenharCombustivel();
     }
     if (modo == CONVERSANDO) desenharConversa();
     else if (modo == TRIPULACAO) desenharTripulacao();

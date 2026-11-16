@@ -3,7 +3,8 @@
    Final bom: a nave atravessa o espaço em direção à Via Láctea,
    que cresce na tela enquanto a nave fica menor (indo para longe).
 
-   Final ruim: ninguém restou a bordo. O motor falha e apaga, as luzes
+   Final ruim: ninguém restou a bordo, ou o combustível não dá para
+   nenhum planeta (tela_nave.c avisa por marcarFinalSemCombustivel). O motor falha e apaga, as luzes
    da nave escurecem e ela gira devagar, à deriva, se afastando. A Via
    Láctea fica pequena no canto, longe demais.
 
@@ -54,6 +55,13 @@ static Texture2D nave;
 static bool iniciou = false;
 static float tempo;
 static TipoFinal final;
+static bool semCombustivel = false;   /* final ruim por falta de combustível */
+static bool pedidoSemCombustivel = false;
+
+void marcarFinalSemCombustivel(void)
+{
+    pedidoSemCombustivel = true;
+}
 
 /* Interpolação linear: t = 0 dá a, t = 1 dá b. */
 static float misturar(float a, float b, float t)
@@ -100,6 +108,13 @@ void entrarTelaFinal(void)
         if (progressoPartida()->tripulacao[i].vivo) {
             final = FINAL_BOM;
         }
+    }
+
+    /* Sem combustível para ir a lugar nenhum = final ruim também. */
+    semCombustivel = pedidoSemCombustivel && final == FINAL_BOM;
+    pedidoSemCombustivel = false;
+    if (semCombustivel) {
+        final = FINAL_RUIM;
     }
 }
 
@@ -238,8 +253,14 @@ static void desenharFinalRuim(void)
                        misturar(ESCALA_DERIVA_INICIO, ESCALA_DERIVA_FIM, t),
                        tempo * GIRO_POR_SEGUNDO, cor);
 
-    desenharFrase("Ninguém restou a bordo.", FRASE_1, ALTURA_VIRTUAL - 52);
-    desenharFrase("A nave segue à deriva, longe de casa.", FRASE_2, ALTURA_VIRTUAL - 36);
+    if (semCombustivel) {
+        desenharFrase("O combustível acabou.", FRASE_1, ALTURA_VIRTUAL - 52);
+        desenharFrase("Sem ter para onde ir, a nave fica à deriva, longe de casa.",
+                      FRASE_2, ALTURA_VIRTUAL - 36);
+    } else {
+        desenharFrase("Ninguém restou a bordo.", FRASE_1, ALTURA_VIRTUAL - 52);
+        desenharFrase("A nave segue à deriva, longe de casa.", FRASE_2, ALTURA_VIRTUAL - 36);
+    }
 
     if (tempo > DURACAO_DERIVA) {
         float escuro = (tempo - DURACAO_DERIVA) / DURACAO_FADE;

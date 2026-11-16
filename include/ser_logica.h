@@ -25,7 +25,6 @@ typedef enum {
     DESEJO_REJUVENESCER,  /* quem desceu passa a ter 18 anos (carisma 50+) */
     DESEJO_REVIVER,       /* o primeiro morto volta (sorte 55+) */
     DESEJO_CAMINHO,       /* próximo planeta não visitado conta como visitado (curiosidade 60+) */
-    DESEJO_VOZES,         /* ganha o tradutor (inteligência 70+, ainda sem tradutor) */
     /* armadilhas */
     DESEJO_TERRA,         /* quem desceu morre (egoísmo 70+) */
     DESEJO_TUDO,          /* quem pediu envelhece 30 anos (impulsividade 70+) */

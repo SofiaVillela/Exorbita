@@ -35,6 +35,8 @@ Tripulante *tripulanteControlado(void);
 #define TOTAL_PEDACOS_MAPA 3
 /* Quantos pedaços já estão na nave. */
 int pedacosMapaObtidos(void);
+/* true com todos os pedaços na nave: é o que abre a Via Láctea. */
+bool mapaEstelarCompleto(void);
 
 /* Existe uma partida que pode ser continuada pelo menu?
    Vira true ao começar uma partida nova e false quando ela acaba

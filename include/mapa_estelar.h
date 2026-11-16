@@ -20,6 +20,10 @@ void encerrarMapaEstelar(void);
    e o painel volta a abrir no primeiro planeta. */
 void reiniciarMapaEstelar(void);
 
+/* true se o combustível atual paga a viagem para pelo menos um
+   planeta liberado e com pouso. false = a nave está presa. */
+bool algumDestinoAlcancavel(void);
+
 /* Início da lista circular de planetas (NULL antes de iniciar).
    O planeta do Ser usa para o desejo "Mostre o caminho". */
 Planeta *listaPlanetasMapa(void);

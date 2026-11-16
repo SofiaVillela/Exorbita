@@ -100,7 +100,6 @@
 #define MINIMO_EGOISMO_ARMADILHA     70   /* "Quero ir para a Terra agora" */
 #define MINIMO_IMPULSIVIDADE_TUDO    70   /* "Quero tudo" */
 #define MINIMO_CURIOSIDADE_CAMINHO   60   /* "Mostre o caminho" */
-#define MINIMO_INTELIGENCIA_VOZES    70   /* "Quero entender as outras vozes" */
 #define GANHO_INTELIGENCIA_SER       15
 #define GANHO_SORTE_SER              20
 #define ENVELHECER_TUDO              30   /* anos a mais para quem pediu tudo */

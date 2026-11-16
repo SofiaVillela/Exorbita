@@ -2,8 +2,11 @@
 
    Texto fixo sobre o fundo de estrelas, numa caixa. Cada tela é um
    vetor de linhas: linhas que começam com '#' são títulos de seção
-   (em lilás); as outras são texto normal. Linha vazia = espaço. */
+   (em lilás); as outras são texto normal. Linha vazia = espaço.
+   Os créditos são diferentes: só os nomes da equipe, grandes e
+   centralizados, cada um com uma cabeça de astronauta, e um obrigado. */
 
+#include <stddef.h>
 #include "raylib.h"
 #include "constantes.h"
 #include "recursos.h"
@@ -16,7 +19,8 @@
 static const char *regras[] = {
     "#OBJETIVO",
     "A tripulação está perdida em outra galáxia.",
-    "Visite todos os planetas para abrir a rota de volta à Via Láctea.",
+    "Junte os 3 pedaços do mapa estelar: Sem Ar, Gigante e Extraterrestre.",
+    "Com eles, a rota de volta à Via Láctea se abre.",
     "",
     "#NA NAVE",
     "WASD / SETAS  andar     SHIFT  correr     E  interagir",
@@ -24,40 +28,66 @@ static const char *regras[] = {
     "Terminais: tripulação, mapa estelar e comunicações.",
     "",
     "#VIAGENS",
-    "Toda viagem gasta combustível, mas sempre sobra o necessário",
-    "para a Via Láctea, que abre quando todos forem visitados.",
+    "Os planetas abrem em ordem: Sem Ar, Gigante, Ser, Robô e",
+    "Extraterrestre. A Via Láctea abre com o mapa estelar completo.",
+    "Toda viagem gasta combustível. Sem ele, a nave fica à deriva.",
     "",
     "#TRAÇOS",
     "Cada tripulante tem traços (inteligência, sorte, carisma...).",
     "Eles mudam o que acontece nos planetas. Escolha bem quem desce.",
     "",
     "#PLANETAS",
-    "Robô: vença os circuitos montando uma fila de comandos.",
-    "Extraterrestre: jogo de blefe. Um tradutor ajuda a entender.",
-    "Gigante: junte três cristais sem pisar nas plantas brilhantes.",
     "Sem Ar: o oxigênio acaba. Abra o portão e volte ao módulo.",
-    "Ser: um desejo por visita. Nem todo pedido é bom."
+    "Gigante: junte três cristais sem pisar nas plantas brilhantes.",
+    "Ser: um desejo por visita. Nem todo pedido é bom.",
+    "Robô: vença os circuitos montando uma fila de comandos.",
+    "Extraterrestre: jogo de blefe. Um tradutor ajuda a entender."
 };
 
-static const char *creditos[] = {
-    "#EXÓRBITA: OS ANOS PERDIDOS",
-    "Jogo da disciplina Algoritmos e Estruturas de Dados",
-    "CESAR School, 2026",
-    "",
-    "#EQUIPE",
-    "Sofia Villela",
-    "  Nave, painel de planetas, planeta do Ser, história e final",
-    "Luis Alves",
-    "  Planeta do robô e planeta sem ar",
-    "Brenno Dornelas",
-    "  Planeta extraterrestre e planeta gigante",
-    "",
-    "#FERRAMENTAS",
-    "Linguagem C (C99) e raylib 5.5",
-    "Fonte Press Start 2P, de CodeMan38 (licença OFL)",
-    "",
-    "Obrigado por jogar!"
+static const char *equipe[] = { "Sofia Villela", "Luis Alves", "Brenno Dornelas" };
+#define TOTAL_EQUIPE 3
+#define TAMANHO_NOME 16          /* letra dos nomes; a cabeça tem o mesmo tamanho */
+#define Y_PRIMEIRO_NOME 100
+#define ESPACO_NOMES 40
+
+/* Cabeça de astronauta 8x8, desenhada em "escala" (2 = 16 px, a
+   altura da letra dos nomes).
+   C = capacete, S = sombra do capacete, V = visor, B = brilho do visor,
+   G = gola laranja do traje. */
+static const char *cabecaAstronauta[8] = {
+    "..CCCC..",
+    ".CCCCCS.",
+    "CCVVVVCS",
+    "CVBVVVVS",
+    "CVVVVVVS",
+    "CCVVVVSS",
+    ".CSSSSS.",
+    "..GGGG..",
 };
+
+/* Cada pessoa da equipe tem um visor de uma cor. */
+static Color corVisor(int pessoa)
+{
+    static const unsigned int cores[] = { 0x68D8CDFF, 0x9B8CE0FF, 0xE8C86AFF };
+    return GetColor(cores[pessoa % 3]);
+}
+
+static void desenharCabeca(int x, int y, int escala, Color visor)
+{
+    for (int linha = 0; linha < 8; linha++) {
+        for (int coluna = 0; coluna < 8; coluna++) {
+            char c = cabecaAstronauta[linha][coluna];
+            Color cor;
+            if (c == 'C') cor = COR_TITULO;
+            else if (c == 'S') cor = GetColor(0x9C93B0FF);
+            else if (c == 'V') cor = visor;
+            else if (c == 'B') cor = WHITE;
+            else if (c == 'G') cor = GetColor(0xF08A4BFF);
+            else continue;
+            DrawRectangle(x + coluna * escala, y + linha * escala, escala, escala, cor);
+        }
+    }
+}
 
 /* Desenha uma tela de texto: caixa, título grande e as linhas. */
 static void desenharTexto(const char *titulo, const char *linhas[], int total)
@@ -127,8 +157,30 @@ Tela atualizarTelaCreditos(void)
     return TELA_CREDITOS;
 }
 
+/* Texto centralizado na tela. */
+static void centralizado(const char *texto, int y, int tamanho, Color cor)
+{
+    int largura = (int)MeasureTextEx(fontePadrao(), texto, tamanho, 0).x;
+    DrawTextEx(fontePadrao(), texto, (Vector2){ (float)(LARGURA_VIRTUAL / 2 - largura / 2), (float)y },
+               tamanho, 0, cor);
+}
+
 void desenharTelaCreditos(void)
 {
-    int total = (int)(sizeof creditos / sizeof creditos[0]);
-    desenharTexto("CRÉDITOS", creditos, total);
+    desenharTexto("CRÉDITOS", NULL, 0);   /* só a caixa e o título */
+
+    /* Cada nome com a cabeça à esquerda; o par (cabeça + nome) é que
+       fica centralizado. */
+    int espacoCabeca = TAMANHO_NOME + 10;
+    for (int i = 0; i < TOTAL_EQUIPE; i++) {
+        int y = Y_PRIMEIRO_NOME + i * ESPACO_NOMES;
+        int larguraNome = (int)MeasureTextEx(fontePadrao(), equipe[i], TAMANHO_NOME, 0).x;
+        int xInicio = LARGURA_VIRTUAL / 2 - (espacoCabeca + larguraNome) / 2;
+        desenharCabeca(xInicio, y, TAMANHO_NOME / 8, corVisor(i));
+        DrawTextEx(fontePadrao(), equipe[i], (Vector2){ (float)(xInicio + espacoCabeca), (float)y },
+                   TAMANHO_NOME, 0, COR_TITULO);
+    }
+
+    int yObrigado = Y_PRIMEIRO_NOME + TOTAL_EQUIPE * ESPACO_NOMES + 30;
+    centralizado("OBRIGADO POR JOGAR!", yObrigado, TAMANHO_NOME, COR_MARCADOR);
 }

@@ -18,8 +18,6 @@ static const Desejo desejos[TOTAL_DESEJOS] = {
       "Um tripulante morto volta à nave." },
     { DESEJO_CAMINHO,      "Mostre o caminho.",
       "Um planeta não visitado conta como visitado." },
-    { DESEJO_VOZES,        "Quero entender as outras vozes.",
-      "Você recebe um tradutor." },
     { DESEJO_TERRA,        "Quero ir para a Terra agora.",
       "Só para você. Agora." },
     { DESEJO_TUDO,         "Quero tudo.",
@@ -108,10 +106,6 @@ static bool desejoLiberado(const ProgressoPartida *jogo, int quemDesceu,
         return t->tracos.curiosidade >= MINIMO_CURIOSIDADE_CAMINHO &&
                primeiroNaoVisitado(planetas) != NULL;
     }
-    if (tipo == DESEJO_VOZES) {
-        return t->tracos.inteligencia >= MINIMO_INTELIGENCIA_VOZES &&
-               !jogo->temTradutor;
-    }
     if (tipo == DESEJO_TERRA) {
         return t->tracos.egoismo >= MINIMO_EGOISMO_ARMADILHA;
     }
@@ -177,12 +171,10 @@ const char *aplicarDesejo(ProgressoPartida *jogo, int quemDesceu,
         Planeta *p = primeiroNaoVisitado(planetas);
         if (p != NULL) {
             p->visitado = true;
-            /* Mesma regra da viagem: com todos os livres visitados,
-               os bloqueados (a Via Láctea) abrem. */
-            if (todosLivresVisitados(planetas)) {
-                desbloquearPlanetas(planetas);
+            /* Mesma regra da viagem: abre o que dependia desse planeta. */
+            if (atualizarDesbloqueios(planetas, mapaEstelarCompleto()) > 0) {
                 snprintf(texto, sizeof texto,
-                         "O Ser aponta para o céu.\n%s aparece no mapa como visitado.\n\nO caminho para a Via Láctea está aberto.",
+                         "O Ser aponta para o céu.\n%s aparece no mapa como visitado.\n\nNovos caminhos se abrem no mapa.",
                          p->nome);
             } else {
                 snprintf(texto, sizeof texto,
@@ -192,11 +184,6 @@ const char *aplicarDesejo(ProgressoPartida *jogo, int quemDesceu,
         } else {
             snprintf(texto, sizeof texto, "Não há mais caminhos para mostrar.");
         }
-    } else if (tipo == DESEJO_VOZES) {
-        jogo->temTradutor = true;
-        snprintf(texto, sizeof texto,
-                 "Palavras estranhas ficam claras na mente de %s.\nA nave agora tem um tradutor.",
-                 t->nome);
     } else if (tipo == DESEJO_TERRA) {
         t->vivo = false;
         snprintf(texto, sizeof texto,

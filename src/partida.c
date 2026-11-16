@@ -44,6 +44,11 @@ int pedacosMapaObtidos(void)
     return pedacos;
 }
 
+bool mapaEstelarCompleto(void)
+{
+    return pedacosMapaObtidos() == TOTAL_PEDACOS_MAPA;
+}
+
 bool partidaEmAndamento(void)
 {
     return emAndamento;

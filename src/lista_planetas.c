@@ -14,6 +14,7 @@ bool inserirPlaneta(Planeta **inicio, const char *nome, const char *arquivo,
     novo->destino = destino;
     novo->bloqueado = bloqueado;
     novo->visitado = false;
+    novo->requisito = NULL;
     if (*inicio == NULL) {
         (*inicio) = novo;
         novo->ant = novo;
@@ -82,6 +83,32 @@ void desbloquearPlanetas(Planeta *inicio)
         atual->bloqueado = false;
         atual = atual->prox;
     } while (atual != inicio);
+}
+
+int atualizarDesbloqueios(Planeta *inicio, bool abrirFinal)
+{
+    if (inicio == NULL) {
+        return 0;
+    }
+
+    int abertos = 0;
+    Planeta *atual = inicio;
+    do {
+        if (atual->bloqueado) {
+            bool abre;
+            if (atual->requisito != NULL) {
+                abre = atual->requisito->visitado;
+            } else {
+                abre = abrirFinal;   /* sem requisito: o destino final */
+            }
+            if (abre) {
+                atual->bloqueado = false;
+                abertos++;
+            }
+        }
+        atual = atual->prox;
+    } while (atual != inicio);
+    return abertos;
 }
 
 Planeta *primeiroNaoVisitado(Planeta *inicio)

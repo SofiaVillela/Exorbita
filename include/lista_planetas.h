@@ -11,6 +11,10 @@ typedef struct Planeta{
     bool visitado;
     Tela destino;
     int custo;
+    /* Planeta que precisa ser visitado para este abrir. NULL num
+       planeta bloqueado = destino final (a Via Láctea): não abre por
+       visita, só quando quem chama atualizarDesbloqueios mandar. */
+    struct Planeta *requisito;
     struct Planeta *prox;
     struct Planeta *ant;
     
@@ -35,6 +39,12 @@ bool todosLivresVisitados(const Planeta *inicio);
 
 /* Tira o bloqueio de todos os planetas da lista. */
 void desbloquearPlanetas(Planeta *inicio);
+
+/* Abre os planetas bloqueados cujo requisito já foi visitado. Um
+   bloqueado sem requisito (a Via Láctea) abre só se abrirFinal for
+   true: no jogo, quando os pedaços do mapa estelar estão completos.
+   Devolve quantos planetas abriram agora. */
+int atualizarDesbloqueios(Planeta *inicio, bool abrirFinal);
 
 /* Devolve o primeiro planeta livre (não bloqueado) que ainda não foi
    visitado, andando pela lista a partir do início. NULL se não houver.

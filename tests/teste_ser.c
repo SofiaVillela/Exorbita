@@ -79,8 +79,7 @@ static void testarFiltro(void)
     conferir(n == 4 && contem(lista, n, DESEJO_TUDO), "Bento: 3 para todos + Quero tudo");
 
     n = desejosDisponiveis(jogo, ANA, planetas, lista);
-    conferir(n == 5 && contem(lista, n, DESEJO_CAMINHO) && contem(lista, n, DESEJO_VOZES),
-             "Ana: 3 + caminho + outras vozes");
+    conferir(n == 4 && contem(lista, n, DESEJO_CAMINHO), "Ana: 3 + caminho");
 
     n = desejosDisponiveis(jogo, ELIAS, planetas, lista);
     conferir(n == 4 && contem(lista, n, DESEJO_CAMINHO), "Elias: 3 + caminho");
@@ -96,10 +95,6 @@ static void testarFiltro(void)
 
     n = desejosDisponiveis(jogo, CAIO, planetas, lista);
     conferir(n == 5 && contem(lista, n, DESEJO_TERRA), "Caio: 3 + rejuvenescer + Terra");
-
-    jogo->temTradutor = true;
-    n = desejosDisponiveis(jogo, ANA, planetas, lista);
-    conferir(!contem(lista, n, DESEJO_VOZES), "com tradutor, outras vozes some");
 
     n = desejosDisponiveis(jogo, ELIAS, NULL, lista);
     conferir(!contem(lista, n, DESEJO_CAMINHO), "sem lista de planetas, caminho some");
@@ -133,10 +128,7 @@ static void testarEfeitos(void)
 
     aplicarDesejo(jogo, ELIAS, planetas, DESEJO_CAMINHO);
     conferir(planetas->prox->visitado, "caminho marca o ROBO como visitado");
-    conferir(!planetas->prox->prox->bloqueado, "com todos visitados, a Via Lactea abre");
-
-    aplicarDesejo(jogo, ANA, planetas, DESEJO_VOZES);
-    conferir(jogo->temTradutor, "outras vozes da o tradutor");
+    conferir(planetas->prox->prox->bloqueado, "sem os pedacos do mapa, a Via Lactea continua fechada");
 
     aplicarDesejo(jogo, BENTO, planetas, DESEJO_TUDO);
     conferir(jogo->tripulacao[BENTO].idade == 23 + ENVELHECER_TUDO, "Quero tudo: Bento envelhece 30 anos");

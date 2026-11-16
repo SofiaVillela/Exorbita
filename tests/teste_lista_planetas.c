@@ -78,11 +78,51 @@ static void testarTresPlanetas(void)
     conferir(inicio == NULL, "liberar a lista de 3 deixa o inicio em NULL");
 }
 
+/* Ordem do jogo: Sem Ar -> Gigante -> Ser -> Robô -> ET; a Via Láctea abre com o mapa completo. */
+static void testarOrdemDesbloqueio(void)
+{
+    Planeta *inicio = NULL;
+    inserirPlaneta(&inicio, "SEM AR", "a.png", 15, TELA_NAVE, false);
+    inserirPlaneta(&inicio, "GIGANTE", "b.png", 20, TELA_NAVE, true);
+    inserirPlaneta(&inicio, "SER", "c.png", 10, TELA_NAVE, true);
+    inserirPlaneta(&inicio, "ROBO", "d.png", 15, TELA_NAVE, true);
+    inserirPlaneta(&inicio, "ET", "e.png", 20, TELA_NAVE, true);
+    inserirPlaneta(&inicio, "VIA", "f.png", 20, TELA_NAVE, true);
+    Planeta *semAr = inicio, *gigante = semAr->prox, *ser = gigante->prox;
+    Planeta *robo = ser->prox, *et = robo->prox, *via = et->prox;
+    gigante->requisito = semAr;
+    ser->requisito = gigante;
+    robo->requisito = ser;
+    et->requisito = robo;
+
+    conferir(atualizarDesbloqueios(inicio, false) == 0, "no comeco nada abre");
+    semAr->visitado = true;
+    conferir(atualizarDesbloqueios(inicio, false) == 1 && !gigante->bloqueado && ser->bloqueado,
+             "Sem Ar visitado abre so o Gigante");
+    gigante->visitado = true;
+    conferir(atualizarDesbloqueios(inicio, false) == 1 && !ser->bloqueado && robo->bloqueado,
+             "Gigante visitado abre o Ser");
+    ser->visitado = true;
+    conferir(atualizarDesbloqueios(inicio, false) == 1 && !robo->bloqueado && et->bloqueado,
+             "Ser visitado abre so o Robo");
+    robo->visitado = true;
+    conferir(atualizarDesbloqueios(inicio, false) == 1 && !et->bloqueado && via->bloqueado,
+             "Robo visitado abre o ET");
+    et->visitado = true;
+    conferir(atualizarDesbloqueios(inicio, false) == 0 && via->bloqueado,
+             "todos visitados, sem o mapa completo: Via fechada");
+    conferir(atualizarDesbloqueios(inicio, true) == 1 && !via->bloqueado,
+             "mapa completo abre a Via");
+
+    liberarPlanetas(&inicio);
+}
+
 int main(void)
 {
     testarListaVazia();
     testarUmPlaneta();
     testarTresPlanetas();
+    testarOrdemDesbloqueio();
 
     printf("\n%d falha(s)\n", falhas);
     if (falhas > 0) {
