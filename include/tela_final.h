@@ -1,4 +1,8 @@
-/* tela_final.h: final do jogo, ao viajar para a Via Láctea. */
+/* tela_final.h: finais do jogo.
+
+   Bom: a nave chega à Via Láctea.
+   Ruim: todos morreram e a nave fica à deriva, sem ninguém para voltar.
+   O final é escolhido sozinho ao entrar na tela, olhando quem está vivo. */
 
 #ifndef TELA_FINAL_H
 #define TELA_FINAL_H
@@ -8,7 +12,7 @@
 /* Carrega a nave e a Via Láctea. Chamar uma vez, depois do InitWindow. */
 void iniciarTelaFinal(void);
 
-/* Chamar ao chegar no final: a animação começa do zero. */
+/* Chamar ao chegar no final: escolhe o final e começa a animação do zero. */
 void entrarTelaFinal(void);
 
 Tela atualizarTelaFinal(void);

@@ -325,11 +325,7 @@ Tela atualizarTelaNave(void)
     if (tempoMarcado > 0) tempoMarcado -= dt;
     if (tempoAviso > 0) tempoAviso -= dt;
     if (modo == FIM) {
-        if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER)) {
-            marcarPartidaEmAndamento(false);   /* ninguém vivo: nada para continuar */
-            return TELA_INICIO;
-        }
-        return TELA_NAVE;
+        return TELA_FINAL;   /* ninguém vivo: vai para o final ruim */
     }
     if (modo == MAPA) {
         if (atualizarMapaEstelar()) {
@@ -576,14 +572,7 @@ void desenharTelaNave(void)
     DrawTexture(sala, 0, 0, WHITE);
     desenharPessoas();
     if (modo == EXPLORANDO) desenharIndicacoes();
-    if (modo == FIM) {
-        DrawRectangle(0, 0, LARGURA_VIRTUAL, ALTURA_VIRTUAL, Fade(BLACK, 0.75f));
-        caixa(96, 120, 448, 110);
-        texto("NINGUÉM RESTOU A BORDO", 120, 140, 16, COR_ALERTA);
-        texto("A nave segue à deriva, em silêncio.", 120, 176, 8, COR_MENU);
-        texto("ENTER / ESC  Voltar ao menu", 120, 206, 8, COR_TITULO);
-    }
-    else if (modo == CONVERSANDO) desenharConversa();
+    if (modo == CONVERSANDO) desenharConversa();
     else if (modo == TRIPULACAO) desenharTripulacao();
     else if (modo == COMUNICACOES) desenharComunicacoes();
     else if (modo == MAPA) desenharMapaEstelar();
