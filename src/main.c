@@ -11,6 +11,7 @@
 #include "tela_ser.h"
 #include "tela_final.h"
 #include "tela_intro.h"
+#include "tela_info.h"
 #include "partida.h"
 #include "mapa_estelar.h"
 
@@ -58,6 +59,10 @@ int main(void)
             tela = atualizarTelaRobo();
         } else if (tela == TELA_SER) {
             tela = atualizarTelaSer();
+        } else if (tela == TELA_REGRAS) {
+            tela = atualizarTelaRegras();
+        } else if (tela == TELA_CREDITOS) {
+            tela = atualizarTelaCreditos();
         } else if (tela == TELA_FINAL) {
             tela = atualizarTelaFinal();
         } else {
@@ -93,8 +98,6 @@ int main(void)
         BeginTextureMode(telaJogo);
         ClearBackground(COR_FUNDO);
 
-        Font fonte = fontePadrao();
-
         if (tela == TELA_INICIO) {
             desenharTelaInicio();
         } else if (tela == TELA_INTRO) {
@@ -112,9 +115,9 @@ int main(void)
         } else if (tela == TELA_FINAL) {
             desenharTelaFinal();
         } else if (tela == TELA_REGRAS) {
-            DrawTextEx(fonte, "Regras (em construção)", (Vector2){ MARGEM_ESQUERDA, 32 }, 16, 1, COR_TITULO);
+            desenharTelaRegras();
         } else if (tela == TELA_CREDITOS) {
-            DrawTextEx(fonte, "Créditos (em construção)", (Vector2){ MARGEM_ESQUERDA, 32 }, 16, 1, COR_TITULO);
+            desenharTelaCreditos();
         }
         EndTextureMode();
 
