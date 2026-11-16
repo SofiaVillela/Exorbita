@@ -8,3 +8,6 @@ build/
 
 # previas geradas pelo Claude (nao vao para o repositorio)
 Claude outputs/
+
+# arquivos temporarios do Python (ferramentas/)
+__pycache__/

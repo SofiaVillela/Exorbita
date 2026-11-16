@@ -198,3 +198,44 @@ bool pisouNaPlanta(PontoExploracao planta, PontoExploracao pes)
 {
     return dentroDoRaio(planta.x, planta.y, pes, GIGANTE_RAIO_PLANTA);
 }
+
+bool temCristalGigante(int cristais, int indice)
+{
+    if (indice < 0 || indice >= GIGANTE_TOTAL_CRISTAIS) {
+        return false;
+    }
+    return (cristais & (1 << indice)) != 0;
+}
+
+int recolherCristalGigante(int cristais, int indice)
+{
+    if (indice < 0 || indice >= GIGANTE_TOTAL_CRISTAIS) {
+        return cristais;
+    }
+    return cristais | (1 << indice);
+}
+
+int contarCristaisGigante(int cristais)
+{
+    int quantos = 0;
+    for (int i = 0; i < GIGANTE_TOTAL_CRISTAIS; i++) {
+        if (temCristalGigante(cristais, i)) {
+            quantos++;
+        }
+    }
+    return quantos;
+}
+
+bool postoGiganteAbre(int cristais)
+{
+    return contarCristaisGigante(cristais) == GIGANTE_TOTAL_CRISTAIS;
+}
+
+int abastecerComCelulaGigante(int combustivel)
+{
+    int depois = combustivel + GIGANTE_COMBUSTIVEL_CELULA;
+    if (depois > COMBUSTIVEL_MAXIMO) {
+        depois = COMBUSTIVEL_MAXIMO;
+    }
+    return depois;
+}

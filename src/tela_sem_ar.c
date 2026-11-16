@@ -27,6 +27,7 @@
 #include "pilha_mochila.h"
 #include "sem_ar_logica.h"
 #include "tela_sem_ar.h"
+#include "sons.h"
 
 typedef enum {
     SA_AJUDA,        /* explicação, na primeira descida */
@@ -114,6 +115,7 @@ static float tempoMissao;             /* segundos na superfície */
 static float oxigenio;
 static bool noJato;
 static bool avisouJato;
+static float tempoAlarme;             /* segundos até o próximo bipe de oxigênio baixo */
 static bool trouxeMapa;
 static float tempoMorte;
 static float tempoAviso;
@@ -310,12 +312,15 @@ static void pegarItensProximos(void)
         ResultadoPegar resultado = pegarItem(&mochila, item->tipo, &oxigenio);
         if (resultado == PEGAR_CHEIA) {
             item->ignorar = true;
+            tocarSom(SOM_NEGADO);
             avisar("Mochila cheia. Q larga o item do topo.");
         } else if (resultado == PEGAR_RESPIROU) {
             item->ativo = false;
+            tocarSom(SOM_OXIGENIO);
             avisar(TextFormat("Oxigênio recarregado: +%d.", SEM_AR_RECARGA_CILINDRO));
         } else {
             item->ativo = false;
+            tocarSom(SOM_ITEM);
             avisar(TextFormat("Pegou: %s. Agora é o topo da mochila.", nomeItem(item->tipo)));
         }
         return;   /* um item por vez */
@@ -338,6 +343,7 @@ static void largarTopo(void)
         itens[i] = (ItemChao){ tipo, explorador.pes.x, explorador.pes.y - 2, false, true, true };
         break;
     }
+    tocarSom(SOM_LARGAR);
     avisar(TextFormat("Largou: %s.", nomeItem(tipo)));
 }
 
@@ -349,12 +355,17 @@ static void usarPortao(void)
     ResultadoPortao resultado = usarTopoNoPortao(&portao, &mochila);
 
     if (resultado == USO_LIGOU) {
+        tocarSom(SOM_TERMINAL);
         avisar("A célula encaixou. O terminal acendeu e pede a placa.");
     } else if (resultado == USO_ABRIU) {
+        tocarSom(SOM_TERMINAL);
+        tocarSom(SOM_PORTAO);
         avisar("Placa aceita. O portão está abrindo.");
     } else if (resultado == USO_ITEM_ERRADO) {
+        tocarSom(SOM_NEGADO);
         avisar(TextFormat("O terminal pede: %s. No topo: %s.", nomeItem(pedido), nomeItem(topo)));
     } else if (resultado == USO_MOCHILA_VAZIA) {
+        tocarSom(SOM_NEGADO);
         avisar(TextFormat("O terminal pede: %s.", nomeItem(pedido)));
     }
     progressoPartida()->etapaPortaoSemAr = (int)portao;
@@ -366,6 +377,7 @@ static void voltarAoModulo(void)
     trouxeMapa = pilhaContem(&mochila, ITEM_MAPA);
     if (trouxeMapa) {
         progressoPartida()->semArConcluido = true;
+        tocarSom(SOM_VITORIA);
         snprintf(textoFala, sizeof textoFala,
                  "O pedaço do mapa está guardado.\n%s sobe a escada e o módulo decola.", quem->nome);
     } else if (progressoPartida()->semArConcluido) {
@@ -386,6 +398,7 @@ static void comecarASufocar(void)
     quem->vivo = false;      /* a nave passa o controle a outro (entrarTelaNave) */
     tempoMorte = 0;
     tempoAviso = 0;
+    tocarSom(SOM_PERDA);
     estado = SA_SUFOCANDO;
 }
 
@@ -428,7 +441,13 @@ static void atualizarExploracao(float dt)
     bool moveu = atualizarExploradorPlaneta(&explorador, &piso, &obstaculo, quantidade, dt, true);
     tempoMissao += dt;
 
+    /* Dentro da estação o chão é de metal; fora, é poeira. */
+    bool naEstacao = explorador.pes.x > 940 && explorador.pes.x < 1224 &&
+                     explorador.pes.y > 88 && explorador.pes.y < 256;
+    definirPiso(naEstacao ? PISO_METAL : PISO_POEIRA);
+
     /* Está dentro de algum jato de gás? */
+    bool estavaNoJato = noJato;
     noJato = false;
     for (int i = 0; i < TOTAL_RESPIRADOUROS; i++) {
         if (faseJato(tempo, (float)i * 1.3f) != JATO_ATIVO) {
@@ -438,6 +457,15 @@ static void atualizarExploracao(float dt)
             < SEM_AR_RAIO_JATO) {
             noJato = true;
         }
+    }
+    if (noJato && !estavaNoJato) {
+        tocarSom(SOM_VAZAMENTO);       /* entrou no jato: o traje começa a vazar */
+    }
+    /* Oxigênio baixo: um bipe duplo que se repete, cada vez mais depressa. */
+    tempoAlarme -= dt;
+    if (oxigenio <= SEM_AR_OXIGENIO_BAIXO && tempoAlarme <= 0) {
+        tocarSom(SOM_ALARME);
+        tempoAlarme = 0.6f + 1.4f * oxigenio / SEM_AR_OXIGENIO_BAIXO;
     }
     if (noJato && !avisouJato) {
         avisouJato = true;

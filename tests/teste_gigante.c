@@ -127,12 +127,34 @@ static void testarHabitante(void)
     conferir(!pisouNaPlanta(planta, longe), "na borda do raio: nao pisou");
 }
 
+static void testarCristais(void)
+{
+    int cristais = 0;
+    conferir(contarCristaisGigante(cristais) == 0 && !postoGiganteAbre(cristais), "sem cristais o posto fica fechado");
+    cristais = recolherCristalGigante(cristais, 1);
+    conferir(temCristalGigante(cristais, 1) && !temCristalGigante(cristais, 0), "recolher marca so aquele cristal");
+    cristais = recolherCristalGigante(cristais, 1);
+    conferir(contarCristaisGigante(cristais) == 1, "recolher o mesmo cristal nao conta duas vezes");
+    conferir(recolherCristalGigante(cristais, GIGANTE_TOTAL_CRISTAIS) == cristais &&
+             recolherCristalGigante(cristais, -1) == cristais, "indice invalido nao muda nada");
+    cristais = recolherCristalGigante(cristais, 0);
+    conferir(!postoGiganteAbre(cristais), "com dois cristais o posto ainda nao abre");
+    cristais = recolherCristalGigante(cristais, 2);
+    conferir(contarCristaisGigante(cristais) == GIGANTE_TOTAL_CRISTAIS && postoGiganteAbre(cristais),
+             "com os tres cristais o posto abre");
+
+    conferir(abastecerComCelulaGigante(40) == 40 + GIGANTE_COMBUSTIVEL_CELULA, "a celula soma combustivel");
+    conferir(abastecerComCelulaGigante(COMBUSTIVEL_MAXIMO - 5) == COMBUSTIVEL_MAXIMO, "a celula nao passa do tanque cheio");
+    conferir(GIGANTE_COMBUSTIVEL_CELULA == CUSTO_GIGANTE, "a celula paga a viagem ate o planeta");
+}
+
 int main(void)
 {
     testarInfracoes();
     testarCalma();
     testarApelos();
     testarHabitante();
+    testarCristais();
     printf("\n%d falha(s)\n", falhas);
     return falhas != 0;
 }

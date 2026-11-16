@@ -131,6 +131,11 @@
 #define GIGANTE_APELO_CARISMA      100   /* "Explicar com calma": carisma inteiro */
 #define GIGANTE_APELO_INTELIGENCIA 90    /* "As regras não estavam claras" */
 #define GIGANTE_APELO_EGOISMO      85    /* "Pôr a culpa em outro" */
+/* O posto do planalto só abre com os três cristais de luz. Nos
+   destroços de uma sonda há uma célula que devolve à nave o
+   combustível gasto para chegar aqui. */
+#define GIGANTE_TOTAL_CRISTAIS     3
+#define GIGANTE_COMBUSTIVEL_CELULA 20
 
 /* Planeta sem ar (sem_ar_logica.c e pilha_mochila.c).
    O oxigênio do traje vai de OXIGENIO_MAXIMO a 0 e cai o tempo todo. */

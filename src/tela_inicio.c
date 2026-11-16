@@ -6,6 +6,7 @@
 #include "raylib.h"
 #include "constantes.h"
 #include "recursos.h"
+#include "sons.h"
 #include "tela_inicio.h"
 #include "fundo.h"
 #include "animacao.h"
@@ -94,12 +95,14 @@ Tela atualizarTelaInicio(void)
     montarMenu();
 
     if (IsKeyPressed(KEY_DOWN)) {
+        tocarSom(SOM_UI_MOVER);
         selecionada++;
         if (selecionada >= totalOpcoes) {
             selecionada = 0;              /* passou da última: volta para a primeira */
         }
     }
     if (IsKeyPressed(KEY_UP)) {
+        tocarSom(SOM_UI_MOVER);
         selecionada--;
         if (selecionada < 0) {
             selecionada = totalOpcoes - 1; /* antes da primeira: vai para a última */

@@ -10,6 +10,28 @@ const char *const MAPA_LAB_PADRAO[LAB_LINHAS] = {
     "....#.E"
 };
 
+/* Circuito 1, de treino: um corredor com uma curva e pouca lava. */
+static const char *const CIRCUITO_TREINO[LAB_LINHAS] = {
+    "S....#.",
+    ".##..#.",
+    ".#L....",
+    ".#..#L.",
+    "...#..E"
+};
+
+/* Circuito 2: dois caminhos possíveis, os dois passando perto da lava. */
+static const char *const CIRCUITO_DESVIO[LAB_LINHAS] = {
+    "..#...E",
+    ".L#.#L.",
+    ".L..#..",
+    ".##.L.#",
+    "S......"
+};
+
+const char *const *const CIRCUITOS_LAB[LAB_TOTAL_CIRCUITOS] = {
+    CIRCUITO_TREINO, CIRCUITO_DESVIO, MAPA_LAB_PADRAO
+};
+
 /* Quanto cada comando muda em x e em y. A ordem é a do enum Comando:
    cima, baixo, esquerda, direita. (y cresce para baixo, como na tela.) */
 static const int MUDA_X[] = { 0, 0, -1, 1 };

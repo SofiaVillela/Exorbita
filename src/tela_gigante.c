@@ -5,10 +5,19 @@
    em um habitante (o bichinho que anda aos pulos) é uma infração. Com
    infrações demais o gigante pega o tripulante, que tenta se explicar:
    cada resposta depende de um traço (regras em gigante_logica.c).
-   O objetivo é chegar ao posto do outro lado e registrar o marco.
 
-   O fundo é uma imagem de 640x360; por onde se pode andar vem de uma
-   máscara do mesmo tamanho (branco = piso). */
+   O objetivo é abrir o posto, perto do pouso, que guarda um pedaço do
+   mapa estelar. Ele só abre com três cristais de luz: um no bosque das
+   plantas (oeste), um no ninho dos habitantes e um no altar depois das
+   pontes (leste). Nos destroços do extremo oeste há uma célula de
+   combustível.
+
+   O planalto tem 2560x360 e a câmera acompanha o tripulante para os
+   lados. O desenho vem em duas camadas, feitas por
+   ferramentas/gerar_gigante.py: o céu com o rosto do gigante, que fica
+   parado na tela, e o terreno, que corre por cima dele. Por onde se
+   pode andar vem de uma máscara do tamanho do terreno (branco = piso);
+   cada pixel verde puro da máscara marca uma planta brilhante. */
 
 #include <math.h>
 #include <stdio.h>
@@ -19,26 +28,39 @@
 #include "partida.h"
 #include "dialogo.h"
 #include "gigante_logica.h"
+#include "pilha_mochila.h"
 #include "tela_gigante.h"
+#include "sons.h"
 
 typedef enum {
     GIG_AJUDA,        /* explicação, na primeira descida */
     GIG_EXPLORANDO,   /* andando pelo planalto */
-    GIG_MARCO,        /* acabou de registrar o marco no posto */
+    GIG_MENSAGEM,     /* o tripulante conta o que achou ou o que falta */
     GIG_PEGO,         /* o gigante pegou o tripulante */
     GIG_ESCOLHENDO,   /* lista de respostas */
     GIG_RESULTADO     /* se a resposta convenceu ou não; depois volta à nave */
 } EstadoTelaGigante;
 
-#define ARQUIVO_FUNDO    "assets/imagens/planetas/gigante_planalto.png"
-#define ARQUIVO_MASCARA  "assets/mascaras/gigante_planalto_mascara.png"
+#define ARQUIVO_FUNDO    "assets/imagens/planetas/gigante_planalto.png"   /* desenho original: o centro do mapa */
+#define ARQUIVO_CEU      "assets/imagens/planetas/gigante_ceu.png"
+#define ARQUIVO_TERRENO  "assets/imagens/planetas/gigante_terreno.png"
+#define ARQUIVO_MASCARA  "assets/mascaras/gigante_terreno_mascara.png"
+#define ARQUIVO_ITENS    "assets/imagens/gigante_itens.png"
+#define ARQUIVO_MAPA     "assets/imagens/sem_ar_itens.png"   /* de onde vem o desenho do pedaço do mapa */
+#define QUADRO_MAPA      ITEM_MAPA   /* posição do pedaço do mapa nessa folha */
 
-#define X_INICIO         90      /* onde o tripulante aparece */
+#define LARGURA_MAPA     2560
+#define X_CENTRO         960     /* onde o desenho original começa dentro do mapa */
+#define MARGEM_CEU       32      /* sobra do céu de cada lado: ele desliza até isto */
+
+#define X_INICIO         (X_CENTRO + 90)    /* onde o tripulante aparece */
 #define Y_INICIO         216
-#define X_POUSO          83      /* círculo de pouso desenhado no chão */
+#define X_POUSO          (X_CENTRO + 83)    /* círculo de pouso desenhado no chão */
 #define Y_POUSO          214
-#define X_POSTO          489     /* chão em frente à porta do posto */
+#define X_POSTO          (X_CENTRO + 489)   /* chão em frente à porta do posto */
 #define Y_POSTO          248
+#define X_CELULA         150     /* célula de combustível, nos destroços */
+#define Y_CELULA         288
 #define DISTANCIA_USAR   40      /* distância dos pés para o E funcionar */
 #define EMPURRAO         13      /* o esbarrão afasta o tripulante do habitante */
 
@@ -49,10 +71,12 @@ typedef enum {
 #define VELOCIDADE_OLHAR 1.5f    /* quanto menor, mais devagar o olho segue */
 #define TOTAL_OLHOS      2
 
-#define TOTAL_PLANTAS    14
-#define TOTAL_HABITANTES 3
+#define MAXIMO_PLANTAS   96      /* quantas plantas a máscara pode marcar */
+#define TOTAL_HABITANTES 13
 #define TOTAL_PEDRAS     14
 #define TEMPO_AVISO      3.0f
+
+enum { PREMIO_NENHUM, PREMIO_CRISTAL, PREMIO_CELULA, PREMIO_MAPA };
 
 typedef struct {
     Rectangle busca;     /* onde procurar os pixels do olho */
@@ -69,20 +93,38 @@ typedef struct {
     float x, y, velocidade;
 } Pedra;
 
-/* Plantas sobre o caminho; dá para desviar de todas. */
-static const PontoExploracao lugaresPlantas[TOTAL_PLANTAS] = {
-    { 62,178}, {118,200}, {150,236}, {215,258}, {250,230}, {293,213}, {327,250},
-    {357,200}, {387,233}, {445,252}, {483,263}, {317,293}, {340,318}, {550,277}
+/* Onde ficam os cristais de luz (as mesmas posições de gerar_gigante.py). */
+static const PontoExploracao lugaresCristais[GIGANTE_TOTAL_CRISTAIS] = {
+    {  400, 196 },   /* bosque das plantas, a oeste */
+    { 2010, 176 },   /* ninho dos habitantes, a leste */
+    { 2466, 232 }    /* altar, depois das pontes */
 };
 
-/* x, y, minX, maxX, velocidade (o resto começa em zero). */
+/* x, y, minX, maxX, velocidade, relógio (o resto começa em zero). */
 static const HabitanteGigante habitantesIniciais[TOTAL_HABITANTES] = {
-    { 130, 248, 100, 165,  48, 0.00f, 0 },
-    { 330, 227, 262, 404,  66, 0.20f, 0 },
-    { 570, 282, 530, 615, -54, 0.35f, 0 }
+    /* centro: os três de sempre */
+    { 1090, 248, 1060, 1125,  48, 0.00f, 0 },
+    { 1290, 227, 1222, 1364,  66, 0.20f, 0 },
+    { 1530, 282, 1490, 1575, -54, 0.35f, 0 },
+    /* oeste: clareira, bosque, trilha do sul e destroços */
+    {  740, 212,  660,  850,  58, 0.05f, 0 },
+    {  460, 226,  300,  620,  60, 0.10f, 0 },
+    {  420, 306,  300,  600, -52, 0.30f, 0 },
+    {  240, 250,  205,  282,  40, 0.15f, 0 },
+    /* leste: clareira, ninho (três, um deles rente ao cristal), ponte e altar */
+    { 1820, 262, 1770, 1878, -46, 0.25f, 0 },
+    { 1950, 206, 1890, 2130,  70, 0.00f, 0 },
+    { 2080, 232, 1890, 2108, -62, 0.30f, 0 },
+    { 2030, 168, 1980, 2080,  44, 0.12f, 0 },
+    { 2250, 190, 2130, 2390,  64, 0.20f, 0 },
+    { 2460, 290, 2405, 2515,  50, 0.40f, 0 }
 };
 
-static Texture2D fundo;
+static Texture2D fundo;               /* só para o retrato do gigante nas falas */
+static Texture2D ceu;                 /* rosto do gigante: fica parado na tela */
+static Texture2D terreno;             /* o chão, que corre com a câmera */
+static Texture2D folhaItens;          /* cristal e célula, 32x32 cada */
+static Texture2D folhaMapa;
 static Texture2D texturaOlhos;        /* pixels dos olhos em branco, para tingir */
 static PixelExploracao *pixelsPiso;
 static MapaExploracao piso;
@@ -94,7 +136,9 @@ static Olho olhos[TOTAL_OLHOS] = {
 
 static ExploradorPlaneta explorador;
 static VigilanciaGigante vigilancia;
-static Planta plantas[TOTAL_PLANTAS];
+static Planta plantas[MAXIMO_PLANTAS];
+static PontoExploracao lugaresPlantas[MAXIMO_PLANTAS];   /* lidos da máscara */
+static int totalPlantas;
 static HabitanteGigante habitantes[TOTAL_HABITANTES];
 static Pedra pedras[TOTAL_PEDRAS];
 
@@ -107,6 +151,7 @@ static float tremor, lento;       /* segundos que faltam de cada efeito */
 static float tempoAviso;
 static char aviso[96];
 static char textoFala[256];
+static int premio;                /* desenho mostrado junto da mensagem (PREMIO_...) */
 static int escolhida;
 static bool convenceu;
 
@@ -115,9 +160,9 @@ static bool convenceu;
 static void carregarPiso(void)
 {
     Image imagem = LoadImage(ARQUIVO_MASCARA);
-    if (imagem.data == NULL || imagem.width != LARGURA_VIRTUAL ||
+    if (imagem.data == NULL || imagem.width != LARGURA_MAPA ||
         imagem.height != ALTURA_VIRTUAL) {
-        TraceLog(LOG_ERROR, "GIGANTE: a mascara deve ter 640x360");
+        TraceLog(LOG_ERROR, "GIGANTE: a mascara deve ter 2560x360");
         if (imagem.data != NULL) {
             UnloadImage(imagem);
         }
@@ -127,8 +172,15 @@ static void carregarPiso(void)
     int quantidade = imagem.width * imagem.height;
     pixelsPiso = malloc((size_t)quantidade * sizeof(*pixelsPiso));
     if (cores != NULL && pixelsPiso != NULL) {
+        totalPlantas = 0;
         for (int i = 0; i < quantidade; i++) {
             pixelsPiso[i] = (PixelExploracao){ cores[i].r, cores[i].g, cores[i].b, cores[i].a };
+            /* Verde puro: aqui cresce uma planta brilhante. */
+            if (cores[i].r == 0 && cores[i].g == 255 && cores[i].b == 0 && totalPlantas < MAXIMO_PLANTAS) {
+                lugaresPlantas[totalPlantas].x = (float)(i % imagem.width);
+                lugaresPlantas[totalPlantas].y = (float)(i / imagem.width);
+                totalPlantas++;
+            }
         }
         piso = (MapaExploracao){ pixelsPiso, imagem.width, imagem.height };
     }
@@ -190,9 +242,13 @@ void iniciarTelaGigante(void)
     if (iniciou) {
         return;
     }
-    fundo = LoadTexture(ARQUIVO_FUNDO);
-    if (fundo.id != 0) {
-        SetTextureFilter(fundo, TEXTURE_FILTER_POINT);
+    Texture2D *texturas[] = { &fundo, &ceu, &terreno, &folhaItens, &folhaMapa };
+    const char *arquivos[] = { ARQUIVO_FUNDO, ARQUIVO_CEU, ARQUIVO_TERRENO, ARQUIVO_ITENS, ARQUIVO_MAPA };
+    for (int i = 0; i < 5; i++) {
+        *texturas[i] = LoadTexture(arquivos[i]);
+        if (texturas[i]->id != 0) {
+            SetTextureFilter(*texturas[i], TEXTURE_FILTER_POINT);
+        }
     }
     carregarPiso();
     carregarOlhos();
@@ -206,10 +262,11 @@ void entrarTelaGigante(void)
         iniciarTelaGigante();
     }
     iniciarVigilanciaGigante(&vigilancia);
-    for (int i = 0; i < TOTAL_PLANTAS; i++) {
+    for (int i = 0; i < totalPlantas; i++) {
         plantas[i].lugar = lugaresPlantas[i];
         plantas[i].pisada = false;
     }
+    premio = PREMIO_NENHUM;
     for (int i = 0; i < TOTAL_HABITANTES; i++) {
         habitantes[i] = habitantesIniciais[i];
     }
@@ -265,10 +322,33 @@ static float limitar(float valor, float minimo, float maximo)
     return valor;
 }
 
+/* Canto esquerdo da parte do planalto que aparece na tela: a câmera
+   segue o tripulante para os lados e para nas pontas do mapa. */
+static float cantoDaCamera(void)
+{
+    return floorf(limitar(explorador.pes.x - LARGURA_VIRTUAL / 2, 0, LARGURA_MAPA - LARGURA_VIRTUAL));
+}
+
+/* O céu desliza só um pouquinho quando a câmera anda (MARGEM_CEU de
+   uma ponta à outra do mapa): é o que dá a sensação de que o gigante
+   está muito longe. Devolve o deslocamento do céu na tela. */
+static int deslocamentoDoCeu(void)
+{
+    float meio = (LARGURA_MAPA - LARGURA_VIRTUAL) / 2.0f;
+    return (int)roundf(-(cantoDaCamera() - meio) * MARGEM_CEU / meio);
+}
+
+static void mostrarMensagem(int qualPremio)
+{
+    premio = qualPremio;
+    estado = GIG_MENSAGEM;
+}
+
 /* Os olhos giram aos poucos na direção de quem desceu. */
 static void seguirComOsOlhos(float dt)
 {
-    float alvoX = limitar((explorador.pes.x - 320) / 320, -1, 1);
+    /* No centro do mapa vale a conta de antes; nas pontas o olhar chega ao limite. */
+    float alvoX = limitar((explorador.pes.x - LARGURA_MAPA / 2) / 320, -1, 1);
     float alvoY = limitar((explorador.pes.y - 250) / 117, -1, 1);
     float passo = limitar(dt * VELOCIDADE_OLHAR, 0, 1);
     olharX += (alvoX - olharX) * passo;
@@ -292,7 +372,14 @@ static void cometerInfracao(InfracaoGigante infracao)
     bool pego = registrarInfracaoGigante(&vigilancia, infracao);
     const char *nome = nomeInfracaoGigante(infracao);
 
+    /* O som do que foi feito: a planta amassada ou o bichinho assustado. */
+    if (infracao == INFRACAO_PLANTA) {
+        tocarSom(SOM_PLANTA);
+    } else {
+        tocarSom(SOM_HABITANTE);
+    }
     if (pego) {
+        tocarSom(SOM_GIGANTE_PEGA);
         progressoPartida()->capturasGigante++;
         snprintf(textoFala, sizeof textoFala,
                  "A mão enorme desce e segura %s.\n"
@@ -308,6 +395,7 @@ static void cometerInfracao(InfracaoGigante infracao)
     if (estadoGigante(&vigilancia) == GIGANTE_REACAO) {
         tremor = GIGANTE_TEMPO_TREMOR;
         lento = GIGANTE_TEMPO_LENTO;
+        tocarSom(SOM_GIGANTE_REAGE);
         soltarPedras();
         if (antes != GIGANTE_REACAO) {
             avisar("O gigante reage: o chão treme e fica difícil andar.");
@@ -321,11 +409,90 @@ static void cometerInfracao(InfracaoGigante infracao)
     }
 }
 
+/* ---------- Cristais, célula e posto ---------- */
+
+/* Índice do cristal ainda no chão que está ao alcance, ou -1. */
+static int cristalPerto(void)
+{
+    for (int i = 0; i < GIGANTE_TOTAL_CRISTAIS; i++) {
+        if (!temCristalGigante(progressoPartida()->cristaisGigante, i) &&
+            perto(lugaresCristais[i].x, lugaresCristais[i].y)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static bool celulaPerto(void)
+{
+    return !progressoPartida()->celulaGiganteUsada && perto(X_CELULA, Y_CELULA);
+}
+
+/* A tecla E, andando pelo planalto: cristal, célula ou posto. */
+static void usarOQueEstaPerto(void)
+{
+    ProgressoPartida *jogo = progressoPartida();
+    int cristal = cristalPerto();
+
+    if (cristal >= 0) {
+        jogo->cristaisGigante = recolherCristalGigante(jogo->cristaisGigante, cristal);
+        int quantos = contarCristaisGigante(jogo->cristaisGigante);
+        tocarSom(SOM_ITEM);
+        if (postoGiganteAbre(jogo->cristaisGigante)) {
+            snprintf(textoFala, sizeof textoFala,
+                     "O terceiro cristal de luz.\n"
+                     "Agora o posto, perto do pouso, pode abrir.");
+        } else {
+            snprintf(textoFala, sizeof textoFala,
+                     "Um cristal de luz: %d de %d.\n"
+                     "O gigante acompanha o cristal com os olhos,\n"
+                     "mas não se mexe.",
+                     quantos, GIGANTE_TOTAL_CRISTAIS);
+        }
+        mostrarMensagem(PREMIO_CRISTAL);
+        return;
+    }
+
+    if (celulaPerto()) {
+        jogo->celulaGiganteUsada = true;
+        jogo->combustivel = abastecerComCelulaGigante(jogo->combustivel);
+        tocarSom(SOM_ITEM);
+        snprintf(textoFala, sizeof textoFala,
+                 "Nos destroços de uma sonda antiga, uma\n"
+                 "célula de combustível ainda cheia.\n"
+                 "Combustível da nave: %d.", jogo->combustivel);
+        mostrarMensagem(PREMIO_CELULA);
+        return;
+    }
+
+    if (perto(X_POSTO, Y_POSTO) && !jogo->giganteConcluido) {
+        if (postoGiganteAbre(jogo->cristaisGigante)) {
+            jogo->giganteConcluido = true;
+            tocarSom(SOM_PORTAO);
+            tocarSom(SOM_VITORIA);
+            snprintf(textoFala, sizeof textoFala,
+                     "Os três cristais acendem o posto e o cofre\n"
+                     "abre. Dentro, um pedaço do mapa estelar.\n"
+                     "Volte ao círculo de pouso para subir à nave.");
+            mostrarMensagem(PREMIO_MAPA);
+        } else {
+            tocarSom(SOM_NEGADO);
+            snprintf(textoFala, sizeof textoFala,
+                     "O posto está sem energia. O painel pede\n"
+                     "três cristais de luz: há %d.\n"
+                     "Eles crescem longe daqui, a oeste e a leste.",
+                     contarCristaisGigante(jogo->cristaisGigante));
+            mostrarMensagem(PREMIO_NENHUM);
+        }
+    }
+}
+
 /* ---------- Lógica ---------- */
 
 static void atualizarExploracao(float dt)
 {
     if (acalmarGigante(&vigilancia, dt)) {
+        tocarSom(SOM_GIGANTE_ACALMA);
         if (vigilancia.pontos > 0) {
             avisar("O gigante está se acalmando.");
         } else {
@@ -363,7 +530,7 @@ static void atualizarExploracao(float dt)
         }
     }
 
-    for (int i = 0; i < TOTAL_PLANTAS; i++) {
+    for (int i = 0; i < totalPlantas; i++) {
         if (plantas[i].pisada || !pisouNaPlanta(plantas[i].lugar, explorador.pes)) {
             continue;
         }
@@ -375,10 +542,7 @@ static void atualizarExploracao(float dt)
     }
 
     if (IsKeyPressed(KEY_E)) {
-        if (perto(X_POSTO, Y_POSTO) && !progressoPartida()->giganteConcluido) {
-            progressoPartida()->giganteConcluido = true;
-            estado = GIG_MARCO;
-        }
+        usarOQueEstaPerto();
     }
 }
 
@@ -394,6 +558,8 @@ Tela atualizarTelaGigante(void)
     tempo += dt;
     seguirComOsOlhos(dt);
     if (tremor > 0) tremor -= dt;
+    /* O zumbido de fundo acompanha a fúria: quanto mais pontos, mais forte e mais rápido. */
+    definirTensao((float)vigilancia.pontos / GIGANTE_LIMITE_INFRACOES);
     if (lento > 0) lento -= dt;
     if (tempoAviso > 0) tempoAviso -= dt;
     for (int i = 0; i < TOTAL_PEDRAS; i++) {
@@ -411,7 +577,7 @@ Tela atualizarTelaGigante(void)
         return TELA_GIGANTE;
     }
 
-    if (estado == GIG_MARCO) {
+    if (estado == GIG_MENSAGEM) {
         if (confirmou() || IsKeyPressed(KEY_ESCAPE)) {
             estado = GIG_EXPLORANDO;
         }
@@ -428,12 +594,14 @@ Tela atualizarTelaGigante(void)
 
     if (estado == GIG_ESCOLHENDO) {
         if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) {
+            tocarSom(SOM_UI_MOVER);
             escolhida++;
             if (escolhida >= TOTAL_APELOS) {
                 escolhida = 0;
             }
         }
         if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
+            tocarSom(SOM_UI_MOVER);
             escolhida--;
             if (escolhida < 0) {
                 escolhida = TOTAL_APELOS - 1;
@@ -444,12 +612,14 @@ Tela atualizarTelaGigante(void)
             int chance = chanceApeloGigante((TipoApelo)escolhida, &quem->tracos);
             convenceu = apeloConvenceu(chance, GetRandomValue(1, 100));
             if (convenceu) {
+                tocarSom(SOM_GIGANTE_ACALMA);
                 snprintf(textoFala, sizeof textoFala,
                          "O gigante pensa e abre a mão.\n%s volta para a nave.", quem->nome);
             } else {
                 /* Não convenceu: quem desceu não volta. A nave passa o
                    controle para outro tripulante (ver entrarTelaNave). */
                 quem->vivo = false;
+                tocarSom(SOM_PERDA);
                 snprintf(textoFala, sizeof textoFala,
                          "O gigante não aceita e fecha a mão.\n%s não volta para a nave.", quem->nome);
             }
@@ -478,16 +648,17 @@ Tela atualizarTelaGigante(void)
 
 /* ---------- Desenho ---------- */
 
-static void desenharOlhos(EstadoGigante humor)
+/* desloca: quanto o céu andou para o lado (ver deslocamentoDoCeu). */
+static void desenharOlhos(EstadoGigante humor, int desloca)
 {
     /* Cor por cima do olho inteiro, conforme o humor. */
     if (texturaOlhos.id != 0) {
         if (humor == GIGANTE_ALERTA) {
-            DrawTexture(texturaOlhos, 0, 0, Fade(GetColor(0xFFFAD7FF), 0.55f));
+            DrawTexture(texturaOlhos, desloca, 0, Fade(GetColor(0xFFFAD7FF), 0.55f));
         } else if (humor == GIGANTE_REACAO) {
-            DrawTexture(texturaOlhos, 0, 0, Fade(GetColor(0xF38054FF), 0.70f));
+            DrawTexture(texturaOlhos, desloca, 0, Fade(GetColor(0xF38054FF), 0.70f));
         } else if (humor == GIGANTE_CALMA) {
-            DrawTexture(texturaOlhos, 0, 0, Fade(GetColor(0xC8BE96FF), 0.25f));
+            DrawTexture(texturaOlhos, desloca, 0, Fade(GetColor(0xC8BE96FF), 0.25f));
         }
     }
 
@@ -520,9 +691,9 @@ static void desenharOlhos(EstadoGigante humor)
                     continue;
                 }
                 if (distancia2 < 6) {
-                    DrawPixel(x, y, centro);
+                    DrawPixel(x + desloca, y, centro);
                 } else {
-                    DrawPixel(x, y, borda);
+                    DrawPixel(x + desloca, y, borda);
                 }
             }
         }
@@ -599,6 +770,69 @@ static void desenharHabitante(const HabitanteGigante *h)
     }
 }
 
+/* Cristal de luz ainda no chão: flutua um pouco e pulsa. */
+static void desenharCristal(int indice)
+{
+    float x = lugaresCristais[indice].x;
+    float y = lugaresCristais[indice].y;
+    float sobe = sinf(tempo * 2.2f + (float)indice * 1.7f) * 2.5f;
+    float pulso = 0.7f + 0.3f * sinf(tempo * 3.1f + (float)indice);
+    Color luz = GetColor(0xA5DCC4FF);
+    DrawEllipse((int)x, (int)y, 9, 3, Fade(BLACK, 0.30f));
+    DrawCircleGradient((int)x, (int)(y - 16 + sobe), 30, Fade(luz, 0.30f * pulso), Fade(luz, 0));
+    DrawTextureRec(folhaItens, (Rectangle){ 0, 0, 32, 32 },
+                   (Vector2){ x - 16, floorf(y - 34 + sobe) }, WHITE);
+    /* Uma faísca sobe de tempos em tempos, para se ver de longe. */
+    float faisca = fmodf(tempo * 0.8f + (float)indice * 0.37f, 1);
+    DrawRectangle((int)x - 9 + indice * 5, (int)(y - 22 - faisca * 26), 2, 2, Fade(WHITE, 1 - faisca));
+}
+
+static void desenharCelula(void)
+{
+    DrawEllipse(X_CELULA, Y_CELULA, 8, 3, Fade(BLACK, 0.30f));
+    DrawTextureRec(folhaItens, (Rectangle){ 32, 0, 32, 32 }, (Vector2){ X_CELULA - 16, Y_CELULA - 30 }, WHITE);
+    if (fmodf(tempo, 1.2f) < 0.6f) {
+        DrawRectangle(X_CELULA - 1, Y_CELULA - 29, 2, 2, GetColor(0xF2C14EFF));   /* luz piscando */
+    }
+}
+
+/* Itens do chão. atras = true desenha só os que ficam atrás do tripulante. */
+static void desenharItens(bool atras)
+{
+    const ProgressoPartida *jogo = progressoPartida();
+    for (int i = 0; i < GIGANTE_TOTAL_CRISTAIS; i++) {
+        if (!temCristalGigante(jogo->cristaisGigante, i) &&
+            (lugaresCristais[i].y <= explorador.pes.y) == atras) {
+            desenharCristal(i);
+        }
+    }
+    if (!jogo->celulaGiganteUsada && (Y_CELULA <= explorador.pes.y) == atras) {
+        desenharCelula();
+    }
+}
+
+/* Painel do posto: três luzes, uma para cada cristal já recolhido.
+   Com o posto aberto, a porta fica acesa. */
+static void desenharPainelDoPosto(void)
+{
+    const ProgressoPartida *jogo = progressoPartida();
+    int quantos = contarCristaisGigante(jogo->cristaisGigante);
+    /* As luzes ficam no painel da parede, à direita da porta. */
+    DrawRectangle(X_CENTRO + 535, 203, 8, 20, GetColor(0x2B273DFF));
+    for (int i = 0; i < GIGANTE_TOTAL_CRISTAIS; i++) {
+        int y = 205 + i * 6;
+        if (i < quantos) {
+            float pulso = 0.75f + 0.25f * sinf(tempo * 3 + (float)i);
+            DrawRectangle(X_CENTRO + 537, y, 4, 4, Fade(GetColor(0xA5DCC4FF), pulso));
+        } else {
+            DrawRectangle(X_CENTRO + 537, y, 4, 4, GetColor(0x4B3D65FF));
+        }
+    }
+    if (jogo->giganteConcluido) {
+        DrawCircleGradient(X_CENTRO + 489, 222, 26, Fade(GetColor(0xA5DCC4FF), 0.28f), Fade(GetColor(0xA5DCC4FF), 0));
+    }
+}
+
 static void desenharPedras(void)
 {
     for (int i = 0; i < TOTAL_PEDRAS; i++) {
@@ -635,7 +869,7 @@ static int larguraTexto(const char *s)
 static void dicaAcimaDoJogador(const char *s)
 {
     int largura = larguraTexto(s) + 16;
-    int x = (int)explorador.pes.x - largura / 2;
+    int x = (int)(explorador.pes.x - cantoDaCamera()) - largura / 2;
     int y = (int)explorador.pes.y - 96;
     if (x < 8) x = 8;
     if (x + largura > LARGURA_VIRTUAL - 8) x = LARGURA_VIRTUAL - 8 - largura;
@@ -654,7 +888,13 @@ static void desenharInterface(EstadoGigante humor)
 
     /* Linha de cima, sem caixa, para não cobrir o rosto do gigante. */
     textoSombra(tripulanteControlado()->nome, 16, 8, COR_TITULO);
-    textoSombra("Planalto do Gigante", 72, 8, COR_TITULO);
+    int cristais = contarCristaisGigante(progressoPartida()->cristaisGigante);
+    Color corCristais = GetColor(0xA5DCC4FF);
+    if (progressoPartida()->giganteConcluido) {
+        textoSombra("MAPA OBTIDO", 72, 8, COR_MARCADOR);
+    } else {
+        textoSombra(TextFormat("CRISTAIS %d/%d", cristais, GIGANTE_TOTAL_CRISTAIS), 72, 8, corCristais);
+    }
     textoSombra("INFRAÇÕES", 248, 8, COR_TITULO);
     DrawRectangle(328, 9, 60, 6, Fade(WHITE, 0.18f));
     DrawRectangle(328, 9, 60 * vigilancia.pontos / GIGANTE_LIMITE_INFRACOES, 6, COR_ALERTA);
@@ -669,11 +909,17 @@ static void desenharInterface(EstadoGigante humor)
     }
     if (perto(X_POUSO, Y_POUSO)) {
         dicaAcimaDoJogador("E  Voltar à nave");
+    } else if (cristalPerto() >= 0) {
+        dicaAcimaDoJogador("E  Pegar cristal de luz");
+    } else if (celulaPerto()) {
+        dicaAcimaDoJogador("E  Pegar célula de combustível");
     } else if (perto(X_POSTO, Y_POSTO)) {
         if (progressoPartida()->giganteConcluido) {
-            dicaAcimaDoJogador("Marco já registrado");
+            dicaAcimaDoJogador("Posto aberto: mapa já recolhido");
+        } else if (postoGiganteAbre(progressoPartida()->cristaisGigante)) {
+            dicaAcimaDoJogador("E  Abrir o posto");
         } else {
-            dicaAcimaDoJogador("E  Registrar marco");
+            dicaAcimaDoJogador("E  Examinar o posto");
         }
     }
     if (tempoAviso > 0) {
@@ -682,6 +928,30 @@ static void desenharInterface(EstadoGigante humor)
         caixaPlaneta(x, 318, largura, 22);
         textoPlaneta(aviso, (float)(x + 8), 325, 8, COR_TITULO);
     }
+}
+
+/* O que acabou de ser achado, grande, no meio da tela, com um clarão. */
+static void desenharPremio(void)
+{
+    if (premio == PREMIO_NENHUM) {
+        return;
+    }
+    Texture2D folha = folhaItens;
+    Rectangle origem = { 0, 0, 32, 32 };
+    Color luz = GetColor(0xA5DCC4FF);
+    if (premio == PREMIO_CELULA) {
+        origem.x = 32;
+        luz = GetColor(0xF2C14EFF);
+    } else if (premio == PREMIO_MAPA) {
+        folha = folhaMapa;
+        origem.x = QUADRO_MAPA * 32;
+        luz = COR_MARCADOR;
+    }
+    float pulso = 0.8f + 0.2f * sinf(tempo * 3);
+    int cx = LARGURA_VIRTUAL / 2;
+    int cy = 150 + (int)(sinf(tempo * 2) * 3);
+    DrawCircleGradient(cx, cy, 70, Fade(luz, 0.40f * pulso), Fade(luz, 0));
+    DrawTexturePro(folha, origem, (Rectangle){ (float)cx - 48, (float)cy - 48, 96, 96 }, (Vector2){ 0, 0 }, 0, WHITE);
 }
 
 /* Falantes: o gigante (o rosto vem do próprio fundo) e quem desceu. */
@@ -705,14 +975,12 @@ static void desenharDialogos(void)
                      "Ao fundo, o gigante observa o planalto.\n"
                      "Não pise nas plantas brilhantes nem esbarre\n"
                      "nos habitantes: cada infração o irrita.\n"
-                     "Chegue ao posto, do outro lado.",
+                     "O posto, a leste, pede três cristais de luz.",
                      "E / ENTER  Continuar", false);
-    } else if (estado == GIG_MARCO) {
+    } else if (estado == GIG_MENSAGEM) {
         Falante visitante = falanteVisitante();
-        desenharFala(&visitante,
-                     "Marco registrado no posto.\n"
-                     "Volte ao círculo de pouso para subir à nave.",
-                     "E / ENTER  Continuar", false);
+        desenharPremio();
+        desenharFala(&visitante, textoFala, "E / ENTER  Continuar", false);
     } else if (estado == GIG_PEGO) {
         Falante gigante = falanteGigante();
         desenharFala(&gigante, textoFala, "E / ENTER  Continuar", true);
@@ -742,25 +1010,43 @@ void desenharTelaGigante(void)
     ClearBackground(GetColor(0x28263BFF));
 
     /* O cenário inteiro treme junto; a interface fica parada. */
+    Vector2 treme = { 0, 0 };
+    if (tremor > 0) {
+        treme = (Vector2){ (float)GetRandomValue(-2, 2), (float)GetRandomValue(-1, 1) };
+    }
+
+    /* 1. O céu e o rosto do gigante: parados na tela (só deslizam um pouco). */
+    Camera2D cameraCeu = { 0 };
+    cameraCeu.zoom = 1;
+    cameraCeu.offset = treme;
+    int desloca = deslocamentoDoCeu();
+    BeginMode2D(cameraCeu);
+    if (ceu.id != 0) {
+        DrawTexture(ceu, desloca - MARGEM_CEU, 0, WHITE);
+    }
+    desenharOlhos(humor, desloca);
+    EndMode2D();
+
+    /* 2. O terreno e tudo o que está nele: correm com a câmera. */
     Camera2D camera = { 0 };
     camera.zoom = 1;
-    if (tremor > 0) {
-        camera.offset = (Vector2){ (float)GetRandomValue(-2, 2), (float)GetRandomValue(-1, 1) };
-    }
+    camera.offset = treme;
+    camera.target = (Vector2){ cantoDaCamera(), 0 };
     BeginMode2D(camera);
-    if (fundo.id != 0) {
-        DrawTexture(fundo, 0, 0, WHITE);
+    if (terreno.id != 0) {
+        DrawTexture(terreno, 0, 0, WHITE);
     }
-    desenharOlhos(humor);
+    desenharPainelDoPosto();
 
     /* As plantas perdem o brilho enquanto o gigante reage. */
     float apagar = 1;
     if (humor == GIGANTE_REACAO) {
         apagar = 0.45f;
     }
-    for (int i = 0; i < TOTAL_PLANTAS; i++) {
+    for (int i = 0; i < totalPlantas; i++) {
         desenharPlanta(&plantas[i], apagar);
     }
+    desenharItens(true);
 
     /* Quem está mais para cima na tela é desenhado primeiro (fica atrás). */
     for (int i = 0; i < TOTAL_HABITANTES; i++) {
@@ -774,7 +1060,11 @@ void desenharTelaGigante(void)
             desenharHabitante(&habitantes[i]);
         }
     }
+    desenharItens(false);
+    EndMode2D();
 
+    /* 3. Pedras caindo e o clarão vermelho: na frente de tudo, presos à tela. */
+    BeginMode2D(cameraCeu);
     desenharPedras();
     if (humor == GIGANTE_REACAO) {
         float vermelho = 0.06f + 0.04f * sinf(tempo * 6);
@@ -792,8 +1082,12 @@ void encerrarTelaGigante(void)
     if (!iniciou) {
         return;
     }
-    if (fundo.id != 0) {
-        UnloadTexture(fundo);
+    Texture2D *texturas[] = { &fundo, &ceu, &terreno, &folhaItens, &folhaMapa };
+    for (int i = 0; i < 5; i++) {
+        if (texturas[i]->id != 0) {
+            UnloadTexture(*texturas[i]);
+        }
+        *texturas[i] = (Texture2D){ 0 };
     }
     if (texturaOlhos.id != 0) {
         UnloadTexture(texturaOlhos);

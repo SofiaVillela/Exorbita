@@ -7,6 +7,8 @@
 #include "mapa_estelar.h"
 #include "partida.h"
 #include "dialogo.h"
+#include "pilha_mochila.h"
+#include "sons.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -16,6 +18,7 @@ enum { SEM_ALVO = -1, TERMINAL_EQUIPE = TOTAL_TRIPULANTES,
        TERMINAL_MAPA, TERMINAL_COMUNICACOES, TOTAL_TERMINAIS = 3 };
 
 static Texture2D sala, tripulantes[TOTAL_TRIPULANTES];
+static Texture2D folhaItens;   /* de onde vem o desenho do pedaço do mapa */
 static PixelExploracao *pixelsPiso;
 static MapaExploracao piso;
 static ObstaculoExploracao obstaculos[TOTAL_TRIPULANTES];
@@ -138,6 +141,8 @@ static bool folhaValida(Texture2D folha)
 void iniciarTelaNave(void)
 {
     sala = LoadTexture("assets/imagens/sala_painel_fundo.png");
+    folhaItens = LoadTexture("assets/imagens/sem_ar_itens.png");
+    if (folhaItens.id) SetTextureFilter(folhaItens, TEXTURE_FILTER_POINT);
     pronta = carregarPiso();
     pronta = pronta && sala.id != 0 && sala.width == LARGURA_VIRTUAL &&
              sala.height == ALTURA_VIRTUAL;
@@ -211,6 +216,7 @@ static void atualizarPassos(float dt)
         while (tempoAnimacao >= TEMPO_PASSO_PERSONAGEM) {
             tempoAnimacao -= TEMPO_PASSO_PERSONAGEM;
             quadro = quadro % 4 + 1;
+            if (quadro == 1 || quadro == 3) tocarPasso(velocidade > VELOCIDADE_JOGADOR);
         }
     } else {
         quadro = 0;
@@ -437,6 +443,37 @@ static void desenharPessoas(void)
     }
 }
 
+/* Canto de baixo, à esquerda: o que a tripulação já trouxe para a nave.
+   Em cima, o tradutor (apagado enquanto não foi obtido). Embaixo, os
+   pedaços do mapa estelar: um quadradinho para cada, cheio quando veio. */
+static void desenharPedacosDoMapa(void)
+{
+    int obtidos = pedacosMapaObtidos();
+    bool temTradutor = progressoPartida()->temTradutor;
+    caixa(16, 266, 172, 34);
+    desenharTradutor(20, 267, 1, temTradutor);
+    texto("TRADUTOR", 56, 273, 8, COR_SUBTITULO);
+    if (temTradutor) {
+        texto("a bordo", 56, 286, 8, GetColor(0x68D8CDFF));
+    } else {
+        texto("não obtido", 56, 286, 8, COR_MENU);
+    }
+    caixa(16, 304, 172, 34);
+    if (folhaItens.id) {
+        Rectangle origem = { (float)(ITEM_MAPA * 32), 0, 32, 32 };
+        DrawTexturePro(folhaItens, origem, (Rectangle){ 20, 305, 32, 32 }, (Vector2){ 0, 0 }, 0, WHITE);
+    }
+    texto("PEDAÇOS DO MAPA", 56, 311, 8, COR_SUBTITULO);
+    for (int i = 0; i < TOTAL_PEDACOS_MAPA; i++) {
+        DrawRectangle(56 + i * 12, 324, 8, 8, GetColor(0x40334FFF));
+        if (i < obtidos) {
+            DrawRectangle(57 + i * 12, 325, 6, 6, COR_MARCADOR);
+        }
+    }
+    texto(TextFormat("%d/%d", obtidos, TOTAL_PEDACOS_MAPA), (float)(60 + TOTAL_PEDACOS_MAPA * 12), 324, 8,
+          obtidos == TOTAL_PEDACOS_MAPA ? COR_MARCADOR : COR_TITULO);
+}
+
 static void desenharIndicacoes(void)
 {
     caixa(16, 12, 184, 34);
@@ -537,7 +574,10 @@ void desenharTelaNave(void)
     desenharFundo();
     DrawTexture(sala, 0, 0, WHITE);
     desenharPessoas();
-    if (modo == EXPLORANDO) desenharIndicacoes();
+    if (modo == EXPLORANDO) {
+        desenharIndicacoes();
+        desenharPedacosDoMapa();
+    }
     if (modo == FIM) {
         DrawRectangle(0, 0, LARGURA_VIRTUAL, ALTURA_VIRTUAL, Fade(BLACK, 0.75f));
         caixa(96, 120, 448, 110);
@@ -555,6 +595,7 @@ void encerrarTelaNave(void)
 {
     encerrarMapaEstelar();
     if (sala.id) UnloadTexture(sala);
+    if (folhaItens.id) UnloadTexture(folhaItens);
     for (int i = 0; i < TOTAL_TRIPULANTES; i++) {
         if (tripulantes[i].id) UnloadTexture(tripulantes[i]);
     }

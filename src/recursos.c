@@ -1,5 +1,6 @@
 #include "recursos.h"  
 static Font fonte;
+static Texture2D tradutor;     /* desenho do aparelho tradutor */
 
 /*  a fonte padrão da raylib não tem acentos (ç, ã, é...). Então usamos a PixelifySans */
 void carregarRecursos(void)
@@ -36,16 +37,38 @@ void carregarRecursos(void)
 
     /* Sem suavização: as letras ficam com pixels nítidos em vez de borradas. */
     SetTextureFilter(fonte.texture, TEXTURE_FILTER_POINT);
+
+    tradutor = LoadTexture("assets/imagens/tradutor.png");
+    if (tradutor.id != 0) {
+        SetTextureFilter(tradutor, TEXTURE_FILTER_POINT);
+    }
 }
 
 /* Libera a memória da fonte. Chamada no fim do jogo. */
 void descarregarRecursos(void)
 {
     UnloadFont(fonte);
+    if (tradutor.id != 0) {
+        UnloadTexture(tradutor);
+    }
 }
 
 /* Devolve a fonte para quem pedir (o main.c usa isso para escrever texto). */
 Font fontePadrao(void)
 {
     return fonte;
+}
+
+void desenharTradutor(float x, float y, float escala, bool aceso)
+{
+    if (tradutor.id == 0) {
+        return;
+    }
+    Color tinta = WHITE;
+    if (!aceso) {
+        tinta = GetColor(0x4A4460FF);     /* só a silhueta escura: ainda não obtido */
+    }
+    Rectangle origem = { 0, 0, (float)tradutor.width, (float)tradutor.height };
+    Rectangle destino = { x, y, (float)tradutor.width * escala, (float)tradutor.height * escala };
+    DrawTexturePro(tradutor, origem, destino, (Vector2){ 0, 0 }, 0, tinta);
 }

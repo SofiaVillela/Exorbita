@@ -9,14 +9,13 @@
 #include "tela_gigante.h"
 #include "tela_robo.h"
 #include "tela_ser.h"
-<<<<<<< HEAD
 #include "tela_final.h"
 #include "tela_intro.h"
-=======
 #include "tela_sem_ar.h"
->>>>>>> 5793632 (feat: adiciona planeta sem ar e refaz o planeta do gigante)
 #include "partida.h"
 #include "mapa_estelar.h"
+#include "musica.h"
+#include "sons.h"
 
 int main(void)
 {
@@ -37,12 +36,11 @@ int main(void)
     iniciarTelaGigante();
     iniciarTelaRobo();
     iniciarTelaSer();
-<<<<<<< HEAD
     iniciarTelaFinal();
-=======
     iniciarTelaSemAr();
->>>>>>> 5793632 (feat: adiciona planeta sem ar e refaz o planeta do gigante)
     iniciarPartida();
+    iniciarMusica();
+    iniciarSons();
 
     RenderTexture2D telaJogo = LoadRenderTexture(LARGURA_VIRTUAL, ALTURA_VIRTUAL);
     SetTextureFilter(telaJogo.texture, TEXTURE_FILTER_POINT);
@@ -51,6 +49,8 @@ int main(void)
     bool rodando = true;
     while (rodando && !WindowShouldClose()) {
         Tela anterior = tela;
+        atualizarMusica();   /* tecla M em qualquer tela */
+        atualizarSons();
         /* 1. Lógica: cada tela devolve para onde o jogo deve ir. */
         if (tela == TELA_INICIO) {
             tela = atualizarTelaInicio();
@@ -66,13 +66,10 @@ int main(void)
             tela = atualizarTelaRobo();
         } else if (tela == TELA_SER) {
             tela = atualizarTelaSer();
-<<<<<<< HEAD
         } else if (tela == TELA_FINAL) {
             tela = atualizarTelaFinal();
-=======
         } else if (tela == TELA_SEM_AR) {
             tela = atualizarTelaSemAr();
->>>>>>> 5793632 (feat: adiciona planeta sem ar e refaz o planeta do gigante)
         } else {
             if (IsKeyPressed(KEY_ESCAPE)) {
                 tela = TELA_INICIO;
@@ -82,11 +79,11 @@ int main(void)
             rodando = false;
         }
         if (tela != anterior) {
+            sonsMudouDeTela(anterior, tela);   /* ambiente, piso e som da viagem */
             if (tela == TELA_EXTRATERRESTRE) entrarTelaExtraterrestre();
             if (tela == TELA_GIGANTE) entrarTelaGigante();
             if (tela == TELA_ROBO) entrarTelaRobo();
             if (tela == TELA_SER) entrarTelaSer();
-<<<<<<< HEAD
             if (tela == TELA_FINAL) entrarTelaFinal();
             if (tela == TELA_INICIO) entrarTelaInicio();
             if (tela == TELA_INTRO) {
@@ -98,9 +95,7 @@ int main(void)
                 marcarPartidaEmAndamento(true);
                 entrarTelaIntro();
             }
-=======
             if (tela == TELA_SEM_AR) entrarTelaSemAr();
->>>>>>> 5793632 (feat: adiciona planeta sem ar e refaz o planeta do gigante)
             /* Voltou de um planeta para a nave (não do menu): confere
                quem está vivo e quem passa a ser controlado. */
             if (tela == TELA_NAVE && anterior != TELA_INICIO && anterior != TELA_INTRO) entrarTelaNave();
@@ -126,18 +121,16 @@ int main(void)
             desenharTelaRobo();
         } else if (tela == TELA_SER) {
             desenharTelaSer();
-<<<<<<< HEAD
         } else if (tela == TELA_FINAL) {
             desenharTelaFinal();
-=======
         } else if (tela == TELA_SEM_AR) {
             desenharTelaSemAr();
->>>>>>> 5793632 (feat: adiciona planeta sem ar e refaz o planeta do gigante)
         } else if (tela == TELA_REGRAS) {
             DrawTextEx(fonte, "Regras (em construção)", (Vector2){ MARGEM_ESQUERDA, 32 }, 16, 1, COR_TITULO);
         } else if (tela == TELA_CREDITOS) {
             DrawTextEx(fonte, "Créditos (em construção)", (Vector2){ MARGEM_ESQUERDA, 32 }, 16, 1, COR_TITULO);
         }
+        desenharMusica();    /* ícone da música, por cima de tudo */
         EndTextureMode();
 
         int escala = GetScreenWidth() / LARGURA_VIRTUAL;
@@ -167,11 +160,10 @@ int main(void)
     encerrarTelaGigante();
     encerrarTelaRobo();
     encerrarTelaSer();
-<<<<<<< HEAD
     encerrarTelaFinal();
-=======
     encerrarTelaSemAr();
->>>>>>> 5793632 (feat: adiciona planeta sem ar e refaz o planeta do gigante)
+    encerrarSons();
+    encerrarMusica();
     encerrarFundo();
     descarregarRecursos();
     CloseWindow();

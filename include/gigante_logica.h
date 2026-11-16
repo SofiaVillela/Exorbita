@@ -4,6 +4,8 @@
    em um habitante é uma infração, e cada infração soma pontos. Com
    pontos suficientes o gigante reage; no limite, ele pega o tripulante.
    Quem foi pego tenta se explicar: cada resposta depende de um traço.
+   O posto do planalto guarda um pedaço do mapa e só abre com os três
+   cristais de luz, espalhados pelo planalto.
    O sorteio fica com quem chama (a tela usa GetRandomValue), para que
    as regras possam ser testadas sem abrir o jogo. */
 
@@ -85,5 +87,18 @@ void atualizarHabitanteGigante(HabitanteGigante *habitante, float dt);
 float alturaPuloHabitante(const HabitanteGigante *habitante);
 bool habitanteEncostou(const HabitanteGigante *habitante, PontoExploracao pes);
 bool pisouNaPlanta(PontoExploracao planta, PontoExploracao pes);
+
+/* Cristais de luz. Os recolhidos ficam numa máscara de bits: o bit i
+   ligado quer dizer que o cristal i já está com a tripulação. */
+bool temCristalGigante(int cristais, int indice);
+/* Recolhe o cristal e devolve a máscara nova. Índice inválido ou
+   cristal já recolhido: devolve a mesma máscara. */
+int recolherCristalGigante(int cristais, int indice);
+int contarCristaisGigante(int cristais);
+/* O posto abre quando os três cristais foram recolhidos. */
+bool postoGiganteAbre(int cristais);
+/* Combustível da nave depois de usar a célula dos destroços (não
+   passa da capacidade do tanque). */
+int abastecerComCelulaGigante(int combustivel);
 
 #endif
