@@ -43,8 +43,10 @@ POSTO = (CENTRO + 489, 248)
 CRISTAIS = [(400, 196), (2010, 176), (2466, 232)]   # bosque, ninho, altar
 CELULA = (150, 288)                                 # destroços, no extremo oeste
 
-# Plantas do desenho original (as mesmas de antes), em pixels do original.
-PLANTAS_ORIGINAIS = [(62, 178), (118, 200), (150, 236), (215, 258), (250, 230), (293, 213), (327, 250),
+# Plantas do desenho original, em pixels do original. As quatro mais perto
+# do pouso, (62, 178), (118, 200), (150, 236) e (215, 258), foram tiradas:
+# o tripulante nascia praticamente em cima delas.
+PLANTAS_ORIGINAIS = [(250, 230), (293, 213), (327, 250),
                      (357, 200), (387, 233), (445, 252), (483, 263), (317, 293), (340, 318), (550, 277)]
 
 # ---------- cores (tiradas do desenho original) ----------
