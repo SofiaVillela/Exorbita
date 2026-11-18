@@ -47,6 +47,7 @@ Na nave, aproxime-se do painel central para abrir o mapa estelar. Escolha um pla
 - Vencidos os três circuitos, volte ao cientista: uma cena mostra a entrega do tradutor.
 - O tradutor aparece no alto da tela nos planetas e na caixa de carga da nave: apagado enquanto não foi obtido, aceso depois.
 - Ele permite compreender os alienígenas; a leitura do tom de voz pode falhar.
+- Depois de concluir os circuitos, use E na bancada para abrir a Corrida dos Algoritmos: aposte em Bubble Sort ou Insertion Sort, acompanhe as comparações e movimentos na mesma sequência e tente acumular acertos e medalhas. Espaço pausa/retoma a corrida; N avança um passo quando pausada.
 - E na porta (ou Esc) volta à nave.
 
 ### Planeta extraterrestre

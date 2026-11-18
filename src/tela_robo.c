@@ -21,6 +21,7 @@
 #include "raylib.h"
 #include "cenario_planeta.h"
 #include "constantes.h"
+#include "corrida_ordenacao.h"
 #include "dialogo.h"
 #include "partida.h"
 #include "recursos.h"
@@ -32,8 +33,11 @@ typedef enum {
     ROBO_SALA,       /* andando pelo laboratório */
     ROBO_CONVERSA,   /* o cientista falando */
     ROBO_PREMIO,     /* a entrega do tradutor */
-    ROBO_DESAFIO     /* na bancada de comandos */
+    ROBO_DESAFIO,    /* na bancada de comandos */
+    ROBO_CORRIDA     /* corrida opcional de ordenação */
 } ModoRobo;
+
+typedef enum { CORRIDA_ESCOLHA, CORRIDA_EXECUCAO, CORRIDA_RESULTADO } FaseCorrida;
 
 typedef enum { ALVO_NENHUM, ALVO_CIENTISTA, ALVO_BANCADA, ALVO_REDOMA, ALVO_PORTA } AlvoRobo;
 
@@ -101,7 +105,7 @@ static const char *falasEntrega[] = {
     "Ele traduz a fala e lê o tom de voz de quem fala.\nO tom é uma pista, nunca uma certeza: às vezes ele erra."
 };
 static const char *falasJaTem[] = {
-    "O tradutor já está com você.\nProcure o viajante na cidade extraterrestre."
+    "O tradutor já está com você.\nProcure o viajante na cidade extraterrestre.\n\nNa bancada, ainda há uma corrida de algoritmos."
 };
 static char falaAndamento[160];
 static const char *falasAndamento[] = { falaAndamento };
@@ -133,6 +137,19 @@ static ResultadoPasso ultimoPasso;
 static int deX, deY;                 /* casa de onde o robozinho saiu no último passo */
 static Comando direcaoRobo;          /* para onde ele está virado */
 static bool rastro[LAB_LINHAS][LAB_COLUNAS];   /* casas por onde já passou nesta execução */
+
+/* Corrida opcional: as duas pistas recebem exatamente os mesmos valores. */
+static Ordenador bolha, insercao;
+static int valoresCorrida[ORDENACAO_MAX_VALORES];
+static int tamanhoCorrida;
+static int apostaCorrida;
+static FaseCorrida faseCorrida;
+static bool corridaPausada;
+static float tempoCorrida;
+static const float INTERVALO_CORRIDA = 0.36f;
+static int acertosCorrida;
+static int sequenciaCorrida;
+static int melhorSequenciaCorrida;
 
 /* ---------- Carregamento ---------- */
 
@@ -193,6 +210,127 @@ static void montarCircuito(void)
     limparRastro();
 }
 
+static void embaralharCorrida(void)
+{
+    tamanhoCorrida = 5 + acertosCorrida / 2;
+    if (tamanhoCorrida > ORDENACAO_MAX_VALORES) tamanhoCorrida = ORDENACAO_MAX_VALORES;
+    for (int i = 0; i < tamanhoCorrida; i++) valoresCorrida[i] = i + 1;
+
+    int tipo = GetRandomValue(0, 3);
+    if (tipo == 0) {
+        /* Uma sequência quase ordenada favorece o algoritmo que termina
+           cedo quando os dados já estão quase no lugar. */
+        int posicao = GetRandomValue(0, tamanhoCorrida - 2);
+        int troca = valoresCorrida[posicao];
+        valoresCorrida[posicao] = valoresCorrida[posicao + 1];
+        valoresCorrida[posicao + 1] = troca;
+    } else if (tipo == 1) {
+        for (int i = 0; i < tamanhoCorrida; i++) {
+            valoresCorrida[i] = tamanhoCorrida - i;
+        }
+    } else {
+        /* Fisher-Yates: gera uma permutação sem repetir nem perder cargas. */
+        for (int i = tamanhoCorrida - 1; i > 0; i--) {
+            int j = GetRandomValue(0, i);
+            int troca = valoresCorrida[i];
+            valoresCorrida[i] = valoresCorrida[j];
+            valoresCorrida[j] = troca;
+        }
+    }
+}
+
+static void prepararCorrida(void)
+{
+    embaralharCorrida();
+    iniciarOrdenador(&bolha, ORDENACAO_BOLHA, valoresCorrida, tamanhoCorrida);
+    iniciarOrdenador(&insercao, ORDENACAO_INSERCAO, valoresCorrida, tamanhoCorrida);
+    faseCorrida = CORRIDA_ESCOLHA;
+    corridaPausada = false;
+    tempoCorrida = 0;
+}
+
+static int custoOrdenador(const Ordenador *o)
+{
+    /* Cada comparação custa uma unidade; cada escrita/movimento de carga
+       também consome energia no simulador da bancada. */
+    return o->comparacoes + o->movimentos;
+}
+
+static void concluirCorrida(void)
+{
+    faseCorrida = CORRIDA_RESULTADO;
+    int custoBolha = custoOrdenador(&bolha);
+    int custoInsercao = custoOrdenador(&insercao);
+    int vencedor = custoBolha < custoInsercao ? ORDENACAO_BOLHA :
+                   custoInsercao < custoBolha ? ORDENACAO_INSERCAO : -1;
+    if (vencedor == apostaCorrida) {
+        acertosCorrida++;
+        sequenciaCorrida++;
+        if (sequenciaCorrida > melhorSequenciaCorrida) {
+            melhorSequenciaCorrida = sequenciaCorrida;
+        }
+        tocarSom(SOM_VITORIA);
+    } else {
+        sequenciaCorrida = 0;
+        tocarSom(SOM_NEGADO);
+    }
+}
+
+static void iniciarDisputa(void)
+{
+    faseCorrida = CORRIDA_EXECUCAO;
+    corridaPausada = false;
+    tempoCorrida = 0;
+    tocarSom(SOM_UI_CONFIRMAR);
+}
+
+static void passoCorrida(void)
+{
+    if (!bolha.terminou) passoOrdenador(&bolha);
+    if (!insercao.terminou) passoOrdenador(&insercao);
+    if (bolha.terminou && insercao.terminou) concluirCorrida();
+}
+
+static void atualizarCorrida(float dt)
+{
+    if (faseCorrida == CORRIDA_ESCOLHA) {
+        if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A) ||
+            IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
+            apostaCorrida = apostaCorrida == ORDENACAO_BOLHA ? ORDENACAO_INSERCAO : ORDENACAO_BOLHA;
+            tocarSom(SOM_UI_MOVER);
+        }
+        if (IsKeyPressed(KEY_R)) prepararCorrida();
+        if (IsKeyPressed(KEY_ENTER)) iniciarDisputa();
+        return;
+    }
+
+    if (faseCorrida == CORRIDA_RESULTADO) {
+        if (IsKeyPressed(KEY_ESCAPE)) {
+            modo = ROBO_SALA;
+        } else if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_R)) {
+            prepararCorrida();
+        }
+        return;
+    }
+
+    if (IsKeyPressed(KEY_ESCAPE)) {
+        modo = ROBO_SALA;
+        return;
+    }
+    if (IsKeyPressed(KEY_SPACE)) corridaPausada = !corridaPausada;
+    if (IsKeyPressed(KEY_N) && corridaPausada) {
+        passoCorrida();
+        return;
+    }
+    if (corridaPausada) return;
+
+    tempoCorrida += dt;
+    while (tempoCorrida >= INTERVALO_CORRIDA && faseCorrida == CORRIDA_EXECUCAO) {
+        tempoCorrida -= INTERVALO_CORRIDA;
+        passoCorrida();
+    }
+}
+
 void iniciarTelaRobo(void)
 {
     if (iniciou) {
@@ -221,6 +359,9 @@ void reiniciarTelaRobo(void)
     montarCircuito();
     conversou = false;
     mostrarDica = false;
+    acertosCorrida = 0;
+    sequenciaCorrida = 0;
+    melhorSequenciaCorrida = 0;
 }
 
 void entrarTelaRobo(void)
@@ -411,7 +552,11 @@ static Tela usarAlvo(void)
             falarComCientista();
             break;
         case ALVO_BANCADA:
-            if (conversou || jogo->roboConcluido) {
+            if (jogo->roboConcluido) {
+                prepararCorrida();
+                apostaCorrida = ORDENACAO_BOLHA;
+                modo = ROBO_CORRIDA;
+            } else if (conversou) {
                 modo = ROBO_DESAFIO;
             } else {
                 tocarSom(SOM_NEGADO);
@@ -467,6 +612,10 @@ Tela atualizarTelaRobo(void)
         } else {
             atualizarDesafio(dt);
         }
+        return TELA_ROBO;
+    }
+    if (modo == ROBO_CORRIDA) {
+        atualizarCorrida(dt);
         return TELA_ROBO;
     }
 
@@ -637,7 +786,8 @@ static const char *dicaDoAlvo(void)
 {
     switch (alvo) {
         case ALVO_CIENTISTA: return "E  Conversar com o cientista";
-        case ALVO_BANCADA:   return "E  Usar a bancada de comandos";
+        case ALVO_BANCADA:
+            return progressoPartida()->roboConcluido ? "E  Corrida dos algoritmos" : "E  Usar a bancada de comandos";
         case ALVO_REDOMA:    return "E  Olhar a redoma";
         case ALVO_PORTA:     return "E  Voltar à nave";
         default:             return NULL;
@@ -932,6 +1082,115 @@ static void desenharDesafio(void)
     textoPlaneta("SETAS/WASD Comando   ENTER Executar   ESC Sair da bancada", 16, 350, 8, COR_MENU);
 }
 
+static const char *nomeAlgoritmo(AlgoritmoOrdenacao algoritmo)
+{
+    return algoritmo == ORDENACAO_BOLHA ? "BUBBLE SORT" : "INSERTION SORT";
+}
+
+static void desenharPistaCorrida(const Ordenador *o, int x, int y, Color cor)
+{
+    const int largura = 294;
+    DrawRectangle(x, y, largura, 164, Fade(GetColor(0x30283FFF), 0.96f));
+    DrawRectangleLines(x, y, largura, 164, Fade(cor, 0.8f));
+    textoPlaneta(nomeAlgoritmo(o->algoritmo), (float)x + 12, (float)y + 10, 8, cor);
+
+    int larguraCartao = 25;
+    int espaco = 5;
+    int trilho = o->quantidade * larguraCartao + (o->quantidade - 1) * espaco;
+    int inicio = x + (largura - trilho) / 2;
+    int yCartoes = y + 52;
+    for (int i = 0; i < o->quantidade; i++) {
+        int px = inicio + i * (larguraCartao + espaco);
+        bool comparando = i == o->comparaA || i == o->comparaB;
+        Color borda = comparando ? COR_MARCADOR : GetColor(0x8C77ADFF);
+        Color fundo = comparando ? Fade(COR_MARCADOR, 0.24f) : GetColor(0x211C2EFF);
+        DrawRectangle(px, yCartoes, larguraCartao, 30, fundo);
+        DrawRectangleLines(px, yCartoes, larguraCartao, 30, borda);
+        if (o->valores[i] > 0) {
+            const char *valor = TextFormat("%d", o->valores[i]);
+            textoPlaneta(valor, (float)px + 9, (float)yCartoes + 10, 8, COR_TITULO);
+        } else {
+            textoPlaneta("_", (float)px + 8, (float)yCartoes + 10, 8, COR_CIANO);
+        }
+    }
+
+    if (o->algoritmo == ORDENACAO_INSERCAO && o->temChave) {
+        textoPlaneta(TextFormat("CHAVE: %d", o->chave), (float)x + 12,
+                     (float)y + 34, 8, COR_CIANO);
+    } else if (o->comparaA >= 0 && o->comparaB >= 0) {
+        textoPlaneta("COMPARANDO VIZINHOS", (float)x + 12, (float)y + 34, 8, COR_MENU);
+    }
+
+    int custo = custoOrdenador(o);
+    textoPlaneta(TextFormat("CUSTO %03d", custo), (float)x + 12, (float)y + 98, 8, COR_TITULO);
+    textoPlaneta(TextFormat("COMP %02d  MOV %02d", o->comparacoes, o->movimentos),
+                 (float)x + 12, (float)y + 116, 8, COR_SUBTITULO);
+    textoPlaneta(TextFormat("TROCAS %02d", o->trocas), (float)x + 12, (float)y + 134, 8, COR_MENU);
+    if (o->terminou) {
+        textoPlaneta("ORDENADO", (float)x + 204, (float)y + 134, 8, COR_CIANO);
+    }
+}
+
+static int vencedorCorrida(void)
+{
+    int custoBolha = custoOrdenador(&bolha);
+    int custoInsercao = custoOrdenador(&insercao);
+    if (custoBolha < custoInsercao) return ORDENACAO_BOLHA;
+    if (custoInsercao < custoBolha) return ORDENACAO_INSERCAO;
+    return -1;
+}
+
+static void desenharCorrida(void)
+{
+    ClearBackground(GetColor(0x16121FFF));
+    DrawRectangle(0, 0, LARGURA_VIRTUAL, 42, GetColor(0x211C2EFF));
+    textoPlaneta("CORRIDA DOS ALGORITMOS", 16, 8, 16, COR_TITULO);
+    textoPlaneta(TextFormat("ACERTOS %02d", acertosCorrida), 456, 8, 8, COR_MARCADOR);
+    textoPlaneta(TextFormat("RECORDE %02d", melhorSequenciaCorrida), 456, 22, 8, COR_CIANO);
+
+    textoPlaneta("MESMA SEQUÊNCIA; MENOR CUSTO VENCE", 22, 49, 8, COR_MENU);
+    desenharPistaCorrida(&bolha, 22, 66,
+                         apostaCorrida == ORDENACAO_BOLHA ? COR_MARCADOR : COR_SUBTITULO);
+    desenharPistaCorrida(&insercao, 324, 66,
+                         apostaCorrida == ORDENACAO_INSERCAO ? COR_MARCADOR : COR_SUBTITULO);
+
+    if (faseCorrida == CORRIDA_ESCOLHA) {
+        textoPlaneta("ESCOLHA QUAL ORDENADOR GASTARÁ MENOS", 22, 242, 8, COR_MARCADOR);
+        textoPlaneta(TextFormat("SUA APOSTA: %s", nomeAlgoritmo((AlgoritmoOrdenacao)apostaCorrida)),
+                     22, 260, 8, COR_TITULO);
+        textoPlaneta(TextFormat("NÍVEL %d  |  %d CARGAS  |  ACERTOS SEGUIDOS %d",
+                     (tamanhoCorrida - 4), tamanhoCorrida, sequenciaCorrida),
+                     22, 278, 8, COR_CIANO);
+        textoPlaneta("MEDALHAS: BRONZE 3  /  PRATA 6  /  OURO 9 ACERTOS",
+                     22, 298, 8, COR_MENU);
+        textoPlaneta("SETAS ESCOLHER   ENTER APOSTAR   R NOVA SEQUÊNCIA",
+                     22, 324, 8, COR_MENU);
+    } else if (faseCorrida == CORRIDA_EXECUCAO) {
+        textoPlaneta(corridaPausada ? "PAUSADO: N AVANÇA UM PASSO EM CADA PISTA" : "AS PISTAS ESTÃO RODANDO...",
+                     22, 252, 8, COR_MARCADOR);
+        textoPlaneta("ESPAÇO PAUSAR/RETOMAR   ESC VOLTAR AO LABORATÓRIO",
+                     22, 272, 8, COR_MENU);
+    } else {
+        int vencedor = vencedorCorrida();
+        if (vencedor < 0) {
+            textoPlaneta("EMPATE: OS DOIS GASTARAM O MESMO CUSTO", 22, 246, 8, COR_MARCADOR);
+        } else {
+            textoPlaneta(TextFormat("MENOR CUSTO: %s", nomeAlgoritmo((AlgoritmoOrdenacao)vencedor)),
+                         22, 246, 8, COR_MARCADOR);
+            textoPlaneta(vencedor == apostaCorrida ? "ACERTOU!" : "DESSA VEZ, NÃO. TENTE OUTRA SEQUÊNCIA.",
+                         22, 264, 8, vencedor == apostaCorrida ? COR_CIANO : COR_ALERTA);
+        }
+        textoPlaneta(TextFormat("SEQUÊNCIA ATUAL %d    MELHOR %d", sequenciaCorrida,
+                     melhorSequenciaCorrida), 22, 284, 8, COR_TITULO);
+        if (acertosCorrida >= 9) textoPlaneta("MEDALHA DE OURO DESBLOQUEADA", 22, 304, 8, COR_MARCADOR);
+        else if (acertosCorrida >= 6) textoPlaneta("MEDALHA DE PRATA DESBLOQUEADA", 22, 304, 8, COR_TITULO);
+        else if (acertosCorrida >= 3) textoPlaneta("MEDALHA DE BRONZE DESBLOQUEADA", 22, 304, 8, COR_CIANO);
+        textoPlaneta("ENTER OUTRA CORRIDA   ESC SAIR", 22, 324, 8, COR_MENU);
+    }
+    DrawRectangle(0, 346, LARGURA_VIRTUAL, 14, GetColor(0x211C2EFF));
+    textoPlaneta("CUSTO = COMPARAÇÕES + MOVIMENTOS DE DADOS", 22, 350, 8, COR_SUBTITULO);
+}
+
 void desenharTelaRobo(void)
 {
     if (!iniciou) {
@@ -939,6 +1198,10 @@ void desenharTelaRobo(void)
     }
     if (modo == ROBO_DESAFIO) {
         desenharDesafio();
+        return;
+    }
+    if (modo == ROBO_CORRIDA) {
+        desenharCorrida();
         return;
     }
     ClearBackground(GetColor(0x16121FFF));
